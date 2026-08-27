@@ -10,12 +10,12 @@ import org.springframework.web.bind.annotation.*;
 public class UsuarioController {
 
     @GetMapping
-    public String ConsultaUsuario(){
+    public String consultaUsuario(){
         return "Hello World";
     }
 
     @GetMapping("/{id}")
-    public Usuario ConsultaUsuarioPorId(@PathVariable Long id){
+    public Usuario consultaUsuarioPorId(@PathVariable Long id){
         Usuario usuario = new Usuario();
         usuario.setNome("Pablo");
         usuario.setCpf("12345678910");
@@ -25,7 +25,7 @@ public class UsuarioController {
     }
 
     @GetMapping("/empresa/{empresaId}")
-    public Usuario ConsultaUsuarioPorEmpresas(@PathVariable Long empresaId){
+    public Usuario consultaUsuarioPorEmpresas(@PathVariable Long empresaId){
         Usuario usuarioContrutorCompleto =
                 new Usuario("Pablo", "12345678910", "23022006");
 
@@ -33,7 +33,7 @@ public class UsuarioController {
     }
 
     @PostMapping("")
-    public ResponseEntity<Usuario> CadastrarUsuario(@RequestBody Usuario usuarioRequest){
+    public ResponseEntity<Usuario> cadastrarUsuario(@RequestBody Usuario usuarioRequest){
 
         if(usuarioRequest.getCpf().isEmpty()){
             return ResponseEntity.badRequest().build();
