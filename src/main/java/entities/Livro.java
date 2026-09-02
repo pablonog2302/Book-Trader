@@ -33,22 +33,48 @@ public class Livro {
 
     //GET SET
 
-
+    //ID
     public Long getId() {return this.id;}
 
+    //TITULO
     public String getTitulo() {return this.titulo;}
 
     public void setTitulo(String titulo) {
         this.titulo = titulo;
     }
 
+    //DESCRICAO
     public String getDescricao() {return this.descricao;}
 
+    public void setDescricao(String descricao) {
+        this.descricao = descricao;
+    }
+
+    //DATA
     public String getDataPublicada() {return this.dataPublicada;}
 
+    public void setDataPublicada(String dataPublicada) {
+        this.dataPublicada = dataPublicada;
+    }
+
+    //AUTOR
     public String getAutor() {return this.autor;}
 
+    public void setAutor(String autor) {
+        this.autor = autor;
+    }
+
+    //ISBN
     public String getIsbn() {return this.isbn;}
 
+    public void setIsbn(String isbn) {
+        this.isbn = isbn;
+    }
+
+    //FOTO
     public String getFotoCapa() {return this.fotoCapa;}
+
+    public void setFotoCapa(String fotoCapa) {
+        this.fotoCapa = fotoCapa;
+    }
 }
