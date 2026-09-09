@@ -1,4 +1,4 @@
-package entities;
+package com.example.booktrader.entities;
 
 public class Livro {
 

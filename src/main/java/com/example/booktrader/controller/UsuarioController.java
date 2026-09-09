@@ -4,7 +4,7 @@ package com.example.booktrader.controller;
 import com.example.booktrader.DTO.AtualizaStatusUsuario;
 import com.example.booktrader.DTO.UsuarioRequest;
 import com.example.booktrader.DTO.UsuarioResponse;
-import entities.Usuario;
+import com.example.booktrader.entities.Usuario;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -55,7 +55,7 @@ public class UsuarioController {
 
 
 
-        return ResponseEntity.ok(new UsuarioResponse(usuarioBanco.getId(), "Atualizado Com Sucesso"));
+        return ResponseEntity.ok(new UsuarioResponse(usuarioBanco.getId(), "Cadastrado Com Sucesso"));
 
     }
 
