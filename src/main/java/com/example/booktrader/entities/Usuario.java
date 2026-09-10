@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 
 import java.time.LocalDateTime;
 
+
 @Entity
 public class Usuario {
 
@@ -34,6 +35,16 @@ public class Usuario {
     private LocalDateTime dataAtualizacao;
 
     private String status;
+
+    private String senha;
+
+    public String getSenha() {
+        return senha;
+    }
+
+    public void setSenha(String senha) {
+        this.senha = senha;
+    }
 
     public Long getId() {
         return id;

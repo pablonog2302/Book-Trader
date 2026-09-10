@@ -1,12 +1,15 @@
 package com.example.booktrader.DTO;
 
-public class UsuarioResponse {
-    private String mensagem;
-    private Long id;
+import com.example.booktrader.entities.OfertaDeTroca;
 
-    public UsuarioResponse(){};
+public class OfertaDeTrocaResponse {
 
-    public UsuarioResponse(Long id, String mensagem) {
+    String mensagem;
+    Long id;
+
+    public OfertaDeTrocaResponse(){}
+
+    public OfertaDeTrocaResponse(Long id, String mensagem) {
         this.mensagem = mensagem;
         this.id = id;
     }
