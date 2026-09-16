@@ -1,29 +1,57 @@
 package com.example.booktrader.controller;
 
-import com.example.booktrader.DTO.LivroRequest;
-import com.example.booktrader.DTO.LivroResponse;
+import com.example.booktrader.DTO.*;
 import com.example.booktrader.entities.Livro;
+import com.example.booktrader.entities.Usuario;
+import com.example.booktrader.repository.LivroRepository;
+import com.example.booktrader.repository.UsuarioRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 @RestController
 @RequestMapping("/livro")
 public class LivroController {
 
+    @Autowired
+    private LivroRepository livroRepository;
+
+
     @GetMapping
-    public String ConsultaLivro(){
-        return "Consultou Livro";
+    public List<Livro> ConsultaLivro(){
+        return livroRepository.findAll();
     }
+
+    @GetMapping("/{titulo}/titulo")
+    public List<Livro> ConsultaLivrosPorTitulo(@PathVariable String titulo){
+        return livroRepository.getLivrosByTituloContainingIgnoreCase(titulo).orElse(null);
+    }
+
 
     @GetMapping("/{id}")
-    public String ConsultaLivroPorId(@PathVariable Long id){
-        return "Consultou Livro por ID";
+    public ResponseEntity<Livro> ConsultaLivroPorId(@PathVariable Long id){
+
+        var livro = livroRepository.findById(id).orElse(null);
+
+        if (livro == null){
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(livro);
     }
 
+
     @GetMapping("/empresa/{empresaId}")
-    public String ConsultaPorEmpresa(@PathVariable String empresaId){
+    public String ConsultaPorEmpresa(@PathVariable Long empresaId){
+        Livro livroContrutorCompleto =
+                //adicionar valores para new usuario
+                new Livro ();
         return "Consultou por Empresa" + empresaId;
     }
+
+
 
     @PostMapping("")
     public ResponseEntity<LivroResponse> post(@RequestBody LivroRequest livroRequest) {
@@ -35,9 +63,46 @@ public class LivroController {
         livroBanco.setAutor(livroRequest.getAutor());
         livroBanco.setIsbn(livroRequest.getIsbn());
         livroBanco.setFotoCapa(livroRequest.getFotoCapa());
+        livroBanco.setDataCadastro(LocalDateTime.now());
+
+        livroRepository.save(livroBanco);
 
         return ResponseEntity.ok(new LivroResponse(livroBanco.getId(),
                 "Livro Cadastrado Com Sucesso!"));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<LivroResponse>
+    AtualizarLivro(@PathVariable Long id, @RequestBody LivroRequest livroRequest){
+
+        Livro livroBanco = livroRepository.findById(id).orElse(null);
+
+        if (livroBanco != null){
+            livroBanco.setTitulo(livroRequest.getTitulo());
+            livroBanco.setDescricao(livroRequest.getDescricao());
+            livroBanco.setAutor(livroRequest.getAutor());
+            livroBanco.setIsbn(livroRequest.getIsbn());
+            livroBanco.setFotoCapa(livroRequest.getFotoCapa());
+
+            livroRepository.save(livroBanco);
+            return ResponseEntity.ok(new LivroResponse(livroBanco.getId(), "Atualizado com Sucesso"));
+        }
+
+        return ResponseEntity.notFound().build();
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<LivroResponse>
+    AtualizaStatus(@PathVariable Long id){
+
+        Livro livroBanco = livroRepository.findById(id).orElse(null);
+
+        if (livroBanco != null){
+
+            livroRepository.save(livroBanco);
+            return ResponseEntity.ok(new LivroResponse(livroBanco.getId(), "Excluido com sucesso"));
+        }
+        return ResponseEntity.notFound().build();
     }
 
 

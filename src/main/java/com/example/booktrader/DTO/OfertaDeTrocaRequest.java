@@ -2,7 +2,6 @@ package com.example.booktrader.DTO;
 
 public class OfertaDeTrocaRequest {
 
-    private String livroDesejado;
     private String livroOfertado;
 
     public String getLivroOfertado() {
@@ -13,11 +12,4 @@ public class OfertaDeTrocaRequest {
         this.livroOfertado = livroOfertado;
     }
 
-    public String getLivroDesejado() {
-        return livroDesejado;
-    }
-
-    public void setLivroDesejado(String livroDesejado) {
-        this.livroDesejado = livroDesejado;
-    }
 }

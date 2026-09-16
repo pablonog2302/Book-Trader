@@ -53,8 +53,6 @@ public class UsuarioController {
     public ResponseEntity<UsuarioResponse> cadastrarUsuario(@RequestBody UsuarioRequest usuarioRequest){
 
 
-
-
         if(usuarioRequest.getCpf().isEmpty()){
             return ResponseEntity.badRequest().build();
         }
@@ -113,7 +111,6 @@ public class UsuarioController {
         if (usuarioBanco != null){
 
             usuarioBanco.setStatus(usuarioRequest.getStatus());
-
 
             usuarioRepository.save(usuarioBanco);
             return ResponseEntity.ok(new UsuarioResponse(usuarioBanco.getId(), "Cadastro Com Sucesso"));

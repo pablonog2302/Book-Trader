@@ -2,53 +2,57 @@ package com.example.booktrader.entities;
 
 public class OfertaDeTroca {
 
+    
     public OfertaDeTroca(){
         this.id = 1L;
     }
 
     public OfertaDeTroca(String solicitante, String receptor, String livroDesejado, String livroOfertado){
         this.id = 1000L;
-        this.solicitante = solicitante;
-        this.receptor = receptor;
-        this.livroDesejado = livroDesejado;
+        this.leitorDono = leitorDono;
         this.livroOfertado = livroOfertado;
     }
 
     private Long id;
-    private String solicitante;
-    private String receptor;
-    private String livroDesejado;
+    private String leitorDono;
     private String livroOfertado;
+    private String status;
+
 
     public Long getId(){return this.id;}
 
 
-    //SOLICITANTE
+    //leitorDono
+
+
+    public String getLeitorDono() {
+        return leitorDono;
+    }
+
+    public void setLeitorDono(String leitorDono) {
+        this.leitorDono = leitorDono;
+    }
+
+
+
+    //status
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    //leitorDono
     public String getSolicitante() {
-        return solicitante;
+        return leitorDono;
     }
 
     public void setSolicitante(String solicitante) {
-        this.solicitante = solicitante;
+        this.leitorDono = solicitante;
     }
 
-    //RECEPTOR
-    public String getReceptor() {
-        return receptor;
-    }
-
-    public void setReceptor(String receptor) {
-        this.receptor = receptor;
-    }
-
-    //LIVRODESEJADO
-    public String getLivroDesejado() {
-        return livroDesejado;
-    }
-
-    public void setLivroDesejado(String livroDesejado) {
-        this.livroDesejado = livroDesejado;
-    }
 
     //LIVROOFERTADO
     public String getLivroOfertado() {

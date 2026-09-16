@@ -14,5 +14,5 @@ public interface UsuarioRepository extends JpaRepository<Usuario,Long> {
 
     Optional<Usuario> getUsuarioByCpf(String cpf);
 
-    Optional<List<Usuario>> getUsuarioByStatus(String status);
+    Optional<List<Usuario>> getUsuariosByStatusContainingIgnoreCase(String status);
 }
