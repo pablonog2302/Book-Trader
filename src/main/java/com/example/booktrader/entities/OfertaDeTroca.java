@@ -2,7 +2,7 @@ package com.example.booktrader.entities;
 
 public class OfertaDeTroca {
 
-    
+
     public OfertaDeTroca(){
         this.id = 1L;
     }
