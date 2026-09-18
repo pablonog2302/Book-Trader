@@ -1,5 +1,11 @@
 package com.example.booktrader.entities;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+
+@Entity
 public class OfertaDeTroca {
 
 
@@ -13,6 +19,8 @@ public class OfertaDeTroca {
         this.livroOfertado = livroOfertado;
     }
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String leitorDono;
     private String livroOfertado;
