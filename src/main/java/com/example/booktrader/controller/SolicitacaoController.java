@@ -59,7 +59,7 @@ public class SolicitacaoController {
 
             solicitacaoRepository.save(solicitacaoBanco);
             return ResponseEntity.ok(new SolicitacaoResponse(solicitacaoBanco.getId(), "Cadastro Com Sucesso"));
-        }
+        } 
 
         return ResponseEntity.notFound().build();
     }
