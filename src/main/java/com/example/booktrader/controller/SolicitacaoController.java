@@ -14,7 +14,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/solicitacoes")
-public class SolicitacaoController {
+public class SolicitacaoController { 
 
     @Autowired
     private SolicitacaoRepository solicitacaoRepository;
