@@ -1,6 +1,5 @@
 package com.example.booktrader.repository;
 
-import com.example.booktrader.entities.Livro;
 import com.example.booktrader.entities.OfertaDeTroca;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

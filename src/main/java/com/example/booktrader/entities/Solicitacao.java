@@ -1,11 +1,16 @@
 package com.example.booktrader.entities;
 
+import java.time.LocalDateTime;
+
 public class Solicitacao {
 
     private Long id;
     private String leitorSolicitante;
     private String ofertaDeTroca;
     private String status;
+    private LocalDateTime dataCadastro;
+    private LocalDateTime dataAtualizacao;
+
 
     public Long getId() {
         return id;
@@ -34,5 +39,21 @@ public class Solicitacao {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public LocalDateTime getDataCadastro() {
+        return dataCadastro;
+    }
+
+    public void setDataCadastro(LocalDateTime dataCadastro) {
+        this.dataCadastro = dataCadastro;
+    }
+
+    public LocalDateTime getDataAtualizacao() {
+        return dataAtualizacao;
+    }
+
+    public void setDataAtualizacao(LocalDateTime dataAtualizacao) {
+        this.dataAtualizacao = dataAtualizacao;
     }
 }
