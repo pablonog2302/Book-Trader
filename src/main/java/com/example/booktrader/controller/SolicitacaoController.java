@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
-@RequestMapping("/solicitacoes")
+@RequestMapping("/solicitacao")
 public class SolicitacaoController { 
 
     @Autowired
@@ -40,6 +40,7 @@ public class SolicitacaoController {
         Solicitacao solicitacaoBanco = new Solicitacao();
 
         solicitacaoBanco.setOfertaDeTroca(solicitacaoRequest.getOfertaDeTroca());
+        solicitacaoBanco.setDataCadastro(LocalDateTime.now());
 
         solicitacaoRepository.save(solicitacaoBanco);
 
