@@ -43,14 +43,6 @@ public class LivroController {
     }
 
 
-    @GetMapping("/empresa/{empresaId}")
-    public String ConsultaPorEmpresa(@PathVariable Long empresaId){
-        Livro livroContrutorCompleto =
-                //adicionar valores para new usuario
-                new Livro ();
-        return "Consultou por Empresa" + empresaId;
-    }
-
 
 
     @PostMapping("")
