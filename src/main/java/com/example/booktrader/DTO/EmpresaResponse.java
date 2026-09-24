@@ -7,6 +7,12 @@ public class EmpresaResponse {
 
 
     public EmpresaResponse(Long id, String mensagem) {
+
+        this.id = id;
+        this.mensagem = mensagem;
+    }
+
+    public EmpresaResponse() {
     }
 
     public Long getId() {

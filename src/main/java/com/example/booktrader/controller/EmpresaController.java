@@ -3,10 +3,13 @@ package com.example.booktrader.controller;
 import com.example.booktrader.DTO.EmpresaRequest;
 import com.example.booktrader.DTO.EmpresaResponse;
 import com.example.booktrader.entities.Empresa;
+import com.example.booktrader.entities.Solicitacao;
 import com.example.booktrader.repository.EmpresaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/empresas")
@@ -14,6 +17,11 @@ public class EmpresaController {
 
     @Autowired
     private EmpresaRepository empresaRepository;
+
+    @GetMapping
+    public List<Empresa> consultaEmpresa() {
+        return empresaRepository.findAll();
+    }
 
     @GetMapping("/{id}")
     public ResponseEntity<Empresa> consultaEmpresaPorId(@PathVariable Long id) {
@@ -39,8 +47,7 @@ public class EmpresaController {
 
         empresaRepository.save(empresaBanco);
 
-        return ResponseEntity.ok(new EmpresaResponse(empresaBanco.getId()
-                , "Empresa Cadastrada"));
+        return ResponseEntity.ok(new EmpresaResponse(empresaBanco.getId(), "Empresa Cadastrada"));
     }
 
 }

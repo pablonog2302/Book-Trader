@@ -5,6 +5,7 @@ import com.example.booktrader.DTO.AtualizaStatusUsuario;
 import com.example.booktrader.DTO.UsuarioRequest;
 import com.example.booktrader.DTO.UsuarioResponse;
 import com.example.booktrader.entities.Usuario;
+import com.example.booktrader.repository.EmpresaRepository;
 import com.example.booktrader.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +22,10 @@ public class UsuarioController {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
+
+    //
+    @Autowired
+    private EmpresaRepository empresaRepository;
 
 
     @GetMapping
@@ -52,10 +57,14 @@ public class UsuarioController {
     @PostMapping("")
     public ResponseEntity<UsuarioResponse> cadastrarUsuario(@RequestBody UsuarioRequest usuarioRequest){
 
+        //
+        var empresaBanco = empresaRepository.findById(usuarioRequest.getEmpresa_id()).orElse(null);
 
         if(usuarioRequest.getCpf().isEmpty()){
             return ResponseEntity.badRequest().build();
         }
+
+
 
         Usuario usuarioBanco = new Usuario();
 
@@ -63,6 +72,7 @@ public class UsuarioController {
         usuarioBanco.setCpf(usuarioRequest.getCpf());
         usuarioBanco.setDataNascimento(usuarioRequest.getDataNascimento());
         usuarioBanco.setSenha(usuarioRequest.getSenha());
+        usuarioBanco.setEmpresa(empresaBanco);
 
         usuarioBanco.setDataCadastro(LocalDateTime.now());
         usuarioBanco.setStatus("A");
