@@ -1,9 +1,11 @@
 package com.example.booktrader.controller;
 
+import com.example.booktrader.DTO.EmpresaConsultaResponse;
 import com.example.booktrader.DTO.EmpresaRequest;
 import com.example.booktrader.DTO.EmpresaResponse;
+import com.example.booktrader.DTO.UsuarioConsultaResponse;
 import com.example.booktrader.entities.Empresa;
-import com.example.booktrader.entities.Solicitacao;
+import com.example.booktrader.entities.Usuario;
 import com.example.booktrader.repository.EmpresaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -32,6 +34,28 @@ public class EmpresaController {
         }
         return ResponseEntity.ok(empresa);
     }
+
+    //29092026
+    @GetMapping("/cnpj/{cnpj}/usuarios")
+    public ResponseEntity<List<UsuarioConsultaResponse>> buscarUsuariosPorCnpjEmpresa(@PathVariable String cnpj){
+
+        var empresaBanco = empresaRepository.getEmpresaByCnpj(cnpj).orElse(null);
+        if (empresaBanco == null)
+            return ResponseEntity.notFound().build();
+
+        var usuarioEmpresaBanco = empresaBanco.getUsuarios()
+                .stream()
+                .map(UsuarioConsultaResponse::new)
+                .toList();
+
+        return ResponseEntity.ok(usuarioEmpresaBanco);
+    }
+
+    @GetMapping
+    public List<EmpresaConsultaResponse> listarTodos (){
+        return empresaRepository.findAll().stream().map(EmpresaConsultaResponse::new).toList();
+    }
+//@pathvariable é quando vem da url, @requestbody é quando vem do json
 
 
 

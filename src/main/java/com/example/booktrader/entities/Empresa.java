@@ -1,9 +1,8 @@
 package com.example.booktrader.entities;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
+
+import java.util.List;
 
 @Entity
 public class Empresa {
@@ -15,11 +14,25 @@ public class Empresa {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    //tornar tal informacao unica
+    @Column(unique = true)
     private String cnpj;
+
     private String razaoSocial;
     private String nomeFantasia;
     private String inscricaoEstadual;
+//29092026
+    @OneToMany(mappedBy = "empresa")//segure o mouse e deixe em cima de empresa
+    private List<Usuario> usuarios;
 
+    public List<Usuario> getUsuarios() {
+        return usuarios;
+    }
+
+    public void setUsuarios(List<Usuario> usuarios) {
+        this.usuarios = usuarios;
+    }
+//
     public Long getId() {
         return id;
     }

@@ -2,6 +2,7 @@ package com.example.booktrader.controller;
 
 
 import com.example.booktrader.DTO.AtualizaStatusUsuario;
+import com.example.booktrader.DTO.UsuarioConsultaResponse;
 import com.example.booktrader.DTO.UsuarioRequest;
 import com.example.booktrader.DTO.UsuarioResponse;
 import com.example.booktrader.entities.Usuario;
@@ -29,13 +30,13 @@ public class UsuarioController {
 
 
     @GetMapping
-    public List<Usuario> consultaUsuario(){
+    public List<UsuarioConsultaResponse> consultaUsuario(){
 
-        return usuarioRepository.findAll();
+        return usuarioRepository.findAll().stream().map(UsuarioConsultaResponse::new).toList();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Usuario> consultaUsuarioPorId(@PathVariable Long id){
+    public ResponseEntity<UsuarioConsultaResponse> consultaUsuarioPorId(@PathVariable Long id){
 
         var usuario = usuarioRepository.findById(id).orElse(null);
 
@@ -43,7 +44,7 @@ public class UsuarioController {
             return ResponseEntity.notFound().build();
 
         }
-        return ResponseEntity.ok(usuario);
+        return ResponseEntity.ok(new UsuarioConsultaResponse(usuario));
     }
 
     @GetMapping("/empresa/{empresaId}")
@@ -94,6 +95,13 @@ public class UsuarioController {
 
 
         if (usuarioBanco != null){
+
+            //chamamos
+            var empresaBanco = empresaRepository.findById(usuarioRequest.getEmpresa_id()).orElse(null);
+            if (empresaBanco == null){
+            }
+
+            usuarioBanco.setEmpresa(empresaBanco);
             usuarioBanco.setNome(usuarioRequest.getNome());
             usuarioBanco.setCpf(usuarioRequest.getCpf());
             usuarioBanco.setDataNascimento(usuarioRequest.getDataNascimento());
