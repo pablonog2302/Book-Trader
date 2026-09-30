@@ -4,6 +4,7 @@ package com.example.booktrader.entities;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 
 @Entity
@@ -48,7 +49,21 @@ public class Usuario {
     public void setEmpresa(Empresa empresa) {
         this.empresa = empresa;
     }
-//
+
+    @OneToMany(mappedBy = "usuario")
+    private List<Livro> livros;
+
+    public List<Livro> getLivros() {
+        return livros;
+    }
+
+    public void setLivros(List<Livro> livros) {
+        this.livros = livros;
+    }
+
+    //
+
+
 
     public String getSenha() {
         return senha;

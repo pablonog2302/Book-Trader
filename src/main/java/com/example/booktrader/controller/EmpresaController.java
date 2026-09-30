@@ -20,10 +20,7 @@ public class EmpresaController {
     @Autowired
     private EmpresaRepository empresaRepository;
 
-    @GetMapping
-    public List<Empresa> consultaEmpresa() {
-        return empresaRepository.findAll();
-    }
+
 
     @GetMapping("/{id}")
     public ResponseEntity<Empresa> consultaEmpresaPorId(@PathVariable Long id) {
