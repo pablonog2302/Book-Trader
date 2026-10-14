@@ -1,6 +1,8 @@
 package com.example.booktrader.entities;
 
 
+import com.example.booktrader.utils.CpfUtils;
+import com.example.booktrader.utils.OnlyNumber;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -115,7 +117,11 @@ public class Usuario {
     }
 
     public void setCpf(String cpf) {
-        this.cpf = cpf;
+
+        if(!CpfUtils.isValidCpf(cpf)){
+            throw new RuntimeException("CPF Invalido;");
+        }
+        this.cpf = OnlyNumber.apenasNumeros(cpf);
     }
 
     public String getDataNascimento() {

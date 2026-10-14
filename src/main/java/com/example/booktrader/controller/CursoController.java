@@ -7,6 +7,7 @@ import com.example.booktrader.DTO.MatriculaRequest;
 import com.example.booktrader.entities.Curso;
 import com.example.booktrader.repository.CursoRepository;
 import com.example.booktrader.repository.UsuarioRepository;
+import com.example.booktrader.utils.CpfUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -38,6 +39,9 @@ public class CursoController {
 
     @GetMapping
     public ResponseEntity<List<CursoConsultaResponse>> listarTodos(){
+
+
+        var cpf = CpfUtils.isValidCpf("057.140.900-80");
 
 
         var listaCurso = cursoRepository.findAll()
