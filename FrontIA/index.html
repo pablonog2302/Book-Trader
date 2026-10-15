@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Entrar</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <main class="page">
+        <section class="login-panel" aria-labelledby="login-heading">
+            <header class="page-header">
+                <p class="eyebrow">Acesso seguro</p>
+                <h1 id="login-heading">Entrar</h1>
+                <p class="intro">Informe seus dados para acessar o sistema.</p>
+            </header>
+
+            <form id="login-form" onsubmit="enviarFormulario(event)">
+                <div class="form-field">
+                    <label for="login">Login</label>
+                    <input id="login" name="login" type="text" autocomplete="username" required>
+                </div>
+                <div class="form-field">
+                    <label for="senha">Senha</label>
+                    <input id="senha" name="senha" type="password" autocomplete="current-password" required>
+                </div>
+                <button id="submit-button" type="submit">Entrar</button>
+                <p id="message" class="message" role="status" aria-live="polite"></p>
+            </form>
+        </section>
+    </main>
+    <script src="js/api.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

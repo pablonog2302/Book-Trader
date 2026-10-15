@@ -1,0 +1,15 @@
+{
+	"folders": [
+		{
+			"name": "html",
+			"path": ".."
+		},
+		{
+			"name": "projetoLogin",
+			"path": "../projetoLogin"
+		}
+	],
+	"settings": {
+		"liveServer.settings.multiRootWorkspaceName": "html"
+	}
+}
