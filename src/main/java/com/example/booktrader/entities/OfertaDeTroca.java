@@ -1,3 +1,4 @@
+
 package com.example.booktrader.entities;
 
 import jakarta.persistence.Entity;
@@ -16,14 +17,14 @@ public class OfertaDeTroca {
     public OfertaDeTroca(String solicitante, String receptor, String livroDesejado, String livroOfertado){
         this.id = 1000L;
         this.leitorDono = leitorDono;
-        this.livroOfertado = livroOfertado;
+        this.livroOfertado = Long.parseLong(livroOfertado);
     }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String leitorDono;
-    private String livroOfertado;
+    private Long livroOfertado;
     private String status;
 
 
@@ -63,11 +64,11 @@ public class OfertaDeTroca {
 
 
     //LIVROOFERTADO
-    public String getLivroOfertado() {
+    public Long getLivroOfertado() {
         return livroOfertado;
     }
 
-    public void setLivroOfertado(String livroOfertado) {
+    public void setLivroOfertado(Long livroOfertado) {
         this.livroOfertado = livroOfertado;
     }
 }

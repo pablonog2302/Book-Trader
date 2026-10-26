@@ -1,8 +1,10 @@
+
 package com.example.booktrader.entities;
 
 
 import com.example.booktrader.utils.CpfUtils;
 import com.example.booktrader.utils.OnlyNumber;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -72,6 +74,8 @@ public class Usuario {
         this.empresa = empresa;
     }
 
+    // impede a repeticao dos livros na resposta json
+    @JsonIgnore
     @OneToMany(mappedBy = "usuario")
     private List<Livro> livros;
 

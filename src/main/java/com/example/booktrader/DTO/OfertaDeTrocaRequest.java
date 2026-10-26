@@ -1,14 +1,24 @@
+
 package com.example.booktrader.DTO;
 
 public class OfertaDeTrocaRequest {
 
-    private String livroOfertado;
+    private Long leitorDono;
+    private Long livroOfertado;
 
-    public String getLivroOfertado() {
+    public Long getLeitorDono() {
+        return leitorDono;
+    }
+
+    public void setLeitorDono(Long leitorDono) {
+        this.leitorDono = leitorDono;
+    }
+
+    public Long getLivroOfertado() {
         return livroOfertado;
     }
 
-    public void setLivroOfertado(String livroOfertado) {
+    public void setLivroOfertado(Long livroOfertado) {
         this.livroOfertado = livroOfertado;
     }
 

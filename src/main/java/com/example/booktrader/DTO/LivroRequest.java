@@ -9,6 +9,7 @@ public class LivroRequest {
     private String autor;
     private String isbn;
     private String fotoCapa;
+    private Long usuarioId;
 
     public String getTitulo() {
         return titulo;
@@ -48,5 +49,13 @@ public class LivroRequest {
 
     public void setFotoCapa(String fotoCapa) {
         this.fotoCapa = fotoCapa;
+    }
+
+    public Long getUsuarioId() {
+        return usuarioId;
+    }
+
+    public void setUsuarioId(Long usuarioId) {
+        this.usuarioId = usuarioId;
     }
 }
