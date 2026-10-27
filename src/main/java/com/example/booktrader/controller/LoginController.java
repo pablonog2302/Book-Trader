@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -35,25 +36,25 @@ public class LoginController {
     @PostMapping
     public ResponseEntity<LoginResponse> logar(@RequestBody LoginRequest loginRequest){
 
-        //JWT Metodo (AULA Q NAO VIM)
-        Algorithm algorithm = Algorithm.HMAC256(secret);
 
-        String token = JWT.create()
-                .withIssuer(emissor)
-                .withSubject(loginRequest.getLogin())
-                .withExpiresAt(gerarDataExpiracao())
-                .sign(algorithm);
 
-        loginResponse.setToken(token);
-        //
 
         //Usuario usuarioBanco = usuarioRepository
 
         if (usuarioRepository.existsUsuarioByCpfAndSenha(loginRequest.getLogin(), loginRequest.getSenha()) ){
+            //JWT Metodo (AULA Q NAO VIM)
+            Algorithm algorithm = Algorithm.HMAC256(secret);
+
+            String token = JWT.create()
+                    .withIssuer(emissor)
+                    .withSubject(loginRequest.getLogin())
+                    .withExpiresAt(gerarDataExpiracao())
+                    .sign(algorithm);
+
 
             LoginResponse loginResponse = new LoginResponse();
             loginResponse.setMensagem("Bem vindo ao sistema");
-
+            loginResponse.setToken(token);
 
 
             return ResponseEntity.ok(loginResponse);

@@ -5,18 +5,6 @@ public class LivroResponse {
     private String mensagem;
     private Long id;
 
-    //aula q n vim
-    private String token;
-
-    public String getToken() {
-        return token;
-    }
-
-    public void setToken(String token) {
-        this.token = token;
-    }
-    //
-
     public LivroResponse(Long id, String mensagem){
         this.mensagem = mensagem;
         this.id = id;

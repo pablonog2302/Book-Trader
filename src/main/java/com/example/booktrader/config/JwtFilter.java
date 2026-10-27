@@ -34,7 +34,8 @@ public class JwtFilter extends OncePerRequestFilter {
                 caminho.startsWith("/swagger-ui") ||
                 caminho.startsWith("/webjars") ||
                 caminho.startsWith("/swagger-resources") ||
-                caminho.startsWith("/v3/api-docs")
+                caminho.startsWith("/v3/api-docs")||
+                    request.getMethod().startsWith("OPTIONS")
         ){
             filterChain.doFilter(request,response);
             return;
