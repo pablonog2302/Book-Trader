@@ -9,6 +9,8 @@ public class LoginResponse {
     //aula q n vim
     private String token;
 
+    private Long usuarioId;
+
     public String getToken() {
         return token;
     }
@@ -18,6 +20,13 @@ public class LoginResponse {
     }
     //
 
+    public Long getUsuarioId() {
+        return usuarioId;
+    }
+
+    public void setUsuarioId(Long usuarioId) {
+        this.usuarioId = usuarioId;
+    }
 
     public String getMensagem() {
         return mensagem;

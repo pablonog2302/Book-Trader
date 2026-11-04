@@ -42,6 +42,9 @@ public class LoginController {
         //Usuario usuarioBanco = usuarioRepository
 
         if (usuarioRepository.existsUsuarioByCpfAndSenha(loginRequest.getLogin(), loginRequest.getSenha()) ){
+
+            Usuario usuarioBanco = usuarioRepository.getUsuarioByCpf(loginRequest.getLogin()).orElse(null);
+
             //JWT Metodo (AULA Q NAO VIM)
             Algorithm algorithm = Algorithm.HMAC256(secret);
 
@@ -55,6 +58,7 @@ public class LoginController {
             LoginResponse loginResponse = new LoginResponse();
             loginResponse.setMensagem("Bem vindo ao sistema");
             loginResponse.setToken(token);
+            loginResponse.setUsuarioId(usuarioBanco.getId());
 
 
             return ResponseEntity.ok(loginResponse);

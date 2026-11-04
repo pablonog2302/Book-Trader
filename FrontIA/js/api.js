@@ -12,6 +12,18 @@ function setToken(token) {
     localStorage.setItem('token', token);
 }
 
+function setUsuarioId(usuarioId) {
+    if (!usuarioId) {
+        return;
+    }
+
+    localStorage.setItem('usuarioId', usuarioId);
+}
+
+function getUsuarioId() {
+    return localStorage.getItem('usuarioId');
+}
+
 function clearToken() {
     localStorage.removeItem('token');
 }
@@ -65,6 +77,7 @@ async function request({ method = 'GET', endpoint, body = null, headers = {}, re
     if (body !== null) {
         config.body = JSON.stringify(body);
     }
+
     try {
         const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
         const contentType = response.headers.get('content-type') || '';
@@ -87,6 +100,7 @@ async function request({ method = 'GET', endpoint, body = null, headers = {}, re
                     : JSON.stringify(data, null, 2)
             );
         }
+
         return data;
     } catch (error) {
         console.error('Erro na requisição:', error);
@@ -108,6 +122,10 @@ async function login(payload) {
         setToken(token);
     }
 
+    if (responseData.usuarioId) {
+        setUsuarioId(responseData.usuarioId);
+    }
+
     return responseData;
 }
 
@@ -115,5 +133,12 @@ async function getUsuarios() {
     return request({
         method: 'GET',
         endpoint: '/usuarios',
+    });
+}
+
+async function getLivros() {
+    return request({
+        method: 'GET',
+        endpoint: '/livro',
     });
 }
