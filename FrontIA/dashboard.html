@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>BookTrader - Painel</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <main class="dashboard">
+        <aside class="sidebar">
+            <h1>BookTrader</h1>
+
+            <nav>
+                <button class="nav-item active" data-section="home"
+                    onclick="renderSection('home')">
+                    Início
+                </button>
+
+                <button class="nav-item" data-section="livros"
+                    onclick="renderSection('livros')">
+                    Livros
+                </button>
+
+                <button class="nav-item" data-section="ofertas"
+                    onclick="renderSection('ofertas')">
+                    Ofertas de troca
+                </button>
+
+                <button class="nav-item" data-section="solicitacoes"
+                    onclick="renderSection('solicitacoes')">
+                    Solicitações
+                </button>
+            </nav>
+
+            <button class="logout-btn" onclick="logoutUsuario()">
+                Sair
+            </button>
+        </aside>
+
+        <section class="dashboard-content">
+            <header class="dashboard-header">
+                <h2 id="pageTitle">Início</h2>
+            </header>
+
+            <div id="pageContent"></div>
+        </section>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

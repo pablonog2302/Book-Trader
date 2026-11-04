@@ -1,7 +1,9 @@
 const loginForm = document.getElementById('loginForm');
-const loginInput = document.getElementById('login');
+const loginInput = document.getElementById('cpf');
 const senhaInput = document.getElementById('senha');
 const feedback = document.getElementById('feedback');
+//essa linha faz com que ao clicar em entrar o formulario execute a funcao loginUsuario().
+loginForm.addEventListener('submit', loginUsuario);
 
 if (sessionStorage.getItem('isLoggedIn') === 'true' || localStorage.getItem('token')) {
     window.location.href = 'dashboard.html';
@@ -36,8 +38,8 @@ async function loginUsuario(event) {
 
         sessionStorage.setItem('isLoggedIn', 'true');
         exibirMensagem(
-            data?.mensagem || 'Bem vindo! Ao sistema de alunos!',
-            'sucess'
+            data?.mensagem || 'Bem vindo ao BookTrader!',
+            'success'
         );
 
         setTimeout(() => {

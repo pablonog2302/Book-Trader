@@ -15,17 +15,21 @@
                 <p class="intro">Informe seus dados para acessar o sistema.</p>
             </header>
 
-            <form id="login-form" onsubmit="enviarFormulario(event)">
+
+            
+            <form id="loginForm">
+
                 <div class="form-field">
-                    <label for="login">Login</label>
-                    <input id="login" name="login" type="text" autocomplete="username" required>
+                    <label for="cpf">CPF</label>
+                    <input id="cpf" name="cpf" type="text" autocomplete="username" required>
                 </div>
+
                 <div class="form-field">
                     <label for="senha">Senha</label>
                     <input id="senha" name="senha" type="password" autocomplete="current-password" required>
                 </div>
                 <button id="submit-button" type="submit">Entrar</button>
-                <p id="message" class="message" role="status" aria-live="polite"></p>
+                <p id="feedback" class="message" role="status" aria-live="polite"></p>
             </form>
         </section>
     </main>

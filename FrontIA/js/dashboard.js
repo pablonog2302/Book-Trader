@@ -1,93 +1,41 @@
 const sections = {
     home: {
-        title: 'Home',
+        title: 'Início',
         content: `
-      <div class="cards-grid">
-        <article class="info-card highlight">
-          <span class="card-label">Resumo geral</span>
-          <h3>120</h3>
-          <p>Alunos ativos no sistema</p>
-        </article>
-        
-        
-        <article class="info-card">
-          <span class="card-label">Cursos</span>
-          <h3>18</h3>
-          <p>Disciplinas disponíveis</p>
-        </article>
-        
-        
-        <article class="info-card">
-          <span class="card-label">Usuários</span>
-          <h3>42</h3>
-          <p>Colaboradores cadastrados</p>
-        </article>
-      </div>
-      
-      
-      <div class="panel">
-        <h2>Bem-vindo ao painel</h2>
-        <p>
-          Acompanhe métricas do sistema, gerencie usuários e mantenha as informações do
-          ambiente acadêmico organizadas.
-        </p>
-      </div>
-    `,
+            <div class="panel">
+                <h2>Bem-vindo ao BookTrader!</h2>
+                <p>
+                    Encontre livros, publique ofertas e acompanhe suas solicitações de troca.
+                </p>
+            </div>
+        `,
     },
-    curso: {
-        title: 'Curso',
+    livros: {
+        title: 'Livros',
         content: `
-      <div class="panel">
-        <h2>Gerenciamento de cursos</h2>
-        <ul class="list">
-          <li>Frontend com HTML, CSS e JavaScript</li>
-          <li>Backend e integrações com APIs</li>
-          <li>Banco de dados e persistência</li>
-        </ul>
-      </div>
-    `,
+            <div class="panel">
+                <h2>Meus livros</h2>
+                <p>Gerencie os livros cadastrados na plataforma.</p>
+            </div>
+        `,
     },
-    usuario: {
-        title: 'Usuário',
+    ofertas: {
+        title: 'Ofertas de troca',
         content: `
-      <section class="usuarios-section">
-        <div class="section-header">
-          <h2>Usuários</h2>
-          <button class="primary-btn" type="button">Adicionar Usuário</button>
-        </div>
-        
-        
-        <div class="table-wrapper">
-          <table class="usuarios-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Nome</th>
-                <th>CPF</th>
-                <th>Data de Nascimento</th>
-                <th>Empresa</th>
-              </tr>
-            </thead>
-            <tbody id="usuariosTableBody">
-              <tr>
-                <td colspan="5" class="table-empty">Carregando usuários...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-    `,
+            <div class="panel">
+                <h2>Ofertas de troca</h2>
+                <p>Visualize e gerencie as ofertas de troca de livros.</p>
+            </div>
+        `,
     },
-    empresa: {
-        title: 'Empresa',
+    solicitacoes: {
+        title: 'Solicitações',
         content: `
-      <div class="panel">
-        <h2>Dados da empresa</h2>
-        <p>Nome: Tech Academy</p>
-        <p>Setor: Educação e tecnologia</p>
-        <p>Localização: São Paulo - SP</p>
-      </div>
-    `,
+            <div class="panel">
+                <h2>Solicitações de troca</h2>
+                <p>Acompanhe suas solicitações de troca de livros.</p>
+            </div>
+        `,
     },
 };
 
@@ -107,13 +55,11 @@ function renderSection(sectionKey) {
     const section = sections[sectionKey] || sections.home;
     pageTitle.textContent = section.title;
     pageContent.innerHTML = section.content;
+
     navItems.forEach((button) => {
         const isActive = button.dataset.section === sectionKey;
         button.classList.toggle('active', isActive);
     });
-    if (sectionKey === 'usuario') {
-        carregarUsuarios();
-    }
 }
 
 
