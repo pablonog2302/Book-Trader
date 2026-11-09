@@ -142,3 +142,11 @@ async function getLivros() {
         endpoint: '/livro',
     });
 }
+
+async function cadastrarLivro(payload) {
+    return request({
+        method: 'POST',
+        endpoint: '/livro',
+        body: payload,
+    });
+}

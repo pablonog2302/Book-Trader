@@ -1,4 +1,3 @@
-
 const sections = {
     home: {
         title: 'Início',
@@ -110,6 +109,55 @@ function mostrarMeusLivros() {
     exibirLivros(meusLivros);
 }
 
+function mostrarFormularioCadastro() {
+    pageContent.innerHTML = `
+        <div class="panel">
+            <h2>Cadastrar livro</h2>
+
+            <form id="formCadastroLivro">
+                <label for="titulo">Título:</label>
+                <input type="text" id="titulo" required>
+
+                <label for="autor">Autor:</label>
+                <input type="text" id="autor" required>
+
+                <label for="descricao">Descrição:</label>
+                <textarea id="descricao"></textarea>
+
+                <label for="isbn">ISBN:</label>
+                <input type="text" id="isbn">
+
+                <label for="fotoCapa">Foto da capa (URL):</label>
+                <input type="text" id="fotoCapa">
+
+                <button type="submit">Cadastrar livro</button>
+                <button type="button" onclick="carregarLivros()">Cancelar</button>
+            </form>
+        </div>
+    `;
+
+    const formCadastroLivro = document.getElementById('formCadastroLivro');
+
+    formCadastroLivro.addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const dadosLivro = {
+            usuarioId: getUsuarioId(),
+            titulo: document.getElementById('titulo').value,
+            autor: document.getElementById('autor').value,
+            descricao: document.getElementById('descricao').value,
+            isbn: document.getElementById('isbn').value,
+            fotoCapa: document.getElementById('fotoCapa').value
+        };
+
+        await cadastrarLivro(dadosLivro);
+
+        alert('Livro cadastrado com sucesso!');
+
+        carregarLivros();
+    });
+}
+
 
 function exibirLivros(listaLivros) {
     let conteudoLivros = `
@@ -123,6 +171,11 @@ function exibirLivros(listaLivros) {
             <button onclick="mostrarMeusLivros()">
                 Meus livros
             </button>
+            
+            <button onclick="mostrarFormularioCadastro()">
+            Cadastrar livro
+            </button>
+        
         </div>
     `;
 
