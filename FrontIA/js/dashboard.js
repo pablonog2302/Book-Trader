@@ -99,6 +99,7 @@ function mostrarTodosLivros() {
 }
 
 
+
 function mostrarMeusLivros() {
     const usuarioId = getUsuarioId();
 
@@ -108,6 +109,8 @@ function mostrarMeusLivros() {
 
     exibirLivros(meusLivros);
 }
+
+
 
 function mostrarFormularioCadastro() {
     pageContent.innerHTML = `

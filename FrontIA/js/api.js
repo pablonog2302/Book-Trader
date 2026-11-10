@@ -143,6 +143,13 @@ async function getLivros() {
     });
 }
 
+async function getLivroPorId(id) {
+    return request({
+        method: 'GET',
+        endpoint: `/livro/${id}`,
+    });
+}
+
 async function cadastrarLivro(payload) {
     return request({
         method: 'POST',

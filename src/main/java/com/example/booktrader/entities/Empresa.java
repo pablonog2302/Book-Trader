@@ -1,7 +1,7 @@
 package com.example.booktrader.entities;
 
 import jakarta.persistence.*;
-
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
 
 @Entity
@@ -21,7 +21,10 @@ public class Empresa {
     private String razaoSocial;
     private String nomeFantasia;
     private String inscricaoEstadual;
+
+
 //29092026
+    @JsonIgnore
     @OneToMany(mappedBy = "empresa")//segure o mouse e deixe em cima de empresa
     private List<Usuario> usuarios;
 
