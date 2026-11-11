@@ -4,6 +4,8 @@ import com.example.booktrader.DTO.LivroRequest;
 import com.example.booktrader.entities.Livro;
 import com.example.booktrader.entities.Usuario;
 import com.example.booktrader.repository.LivroRepository;
+import com.example.booktrader.repository.LivroOfertadoRepository;
+import com.example.booktrader.repository.OfertaDeTrocaRepository;
 import com.example.booktrader.repository.UsuarioRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,6 +34,12 @@ class LivroControllerTest {
 
     @Mock
     private UsuarioRepository usuarioRepository;
+
+    @Mock
+    private OfertaDeTrocaRepository ofertaRepository;
+
+    @Mock
+    private LivroOfertadoRepository livroOfertadoRepository;
 
     @InjectMocks
     private LivroController livroController;
@@ -123,5 +131,17 @@ class LivroControllerTest {
 
         assertEquals(HttpStatus.OK, resposta.getStatusCode());
         verify(livroRepository).delete(livro);
+    }
+
+    @Test
+    void impedeExclusaoDeLivroQueFazParteDoHistoricoDeOfertas() {
+        when(livroRepository.findById(10L)).thenReturn(Optional.of(livro));
+        when(usuarioRepository.getUsuarioByCpf("12345678900")).thenReturn(Optional.of(dono));
+        when(ofertaRepository.existsByLivroDesejadoId(10L)).thenReturn(true);
+
+        var resposta = livroController.excluirLivro(10L, request);
+
+        assertEquals(HttpStatus.CONFLICT, resposta.getStatusCode());
+        verify(livroRepository, never()).delete(livro);
     }
 }

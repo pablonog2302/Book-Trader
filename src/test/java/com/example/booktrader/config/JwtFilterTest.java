@@ -51,4 +51,30 @@ class JwtFilterTest {
 
         assertEquals(401, response.getStatus());
     }
+
+    @Test
+    void permiteCadastroSemToken() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/usuarios");
+        request.setMethod("POST");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockFilterChain cadeia = new MockFilterChain();
+
+        jwtFilter.doFilterInternal(request, response, cadeia);
+
+        assertEquals(200, response.getStatus());
+        assertEquals(request, cadeia.getRequest());
+    }
+
+    @Test
+    void exigeTokenNasOutrasRotasDeUsuario() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/usuarios");
+        request.setMethod("GET");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        jwtFilter.doFilterInternal(request, response, new MockFilterChain());
+
+        assertEquals(401, response.getStatus());
+    }
 }
