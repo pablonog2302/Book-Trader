@@ -2,6 +2,7 @@ package com.example.booktrader.config;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
+import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.algorithms.Algorithm;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -43,23 +44,21 @@ public class JwtFilter extends OncePerRequestFilter {
 
         String headerToken = request.getHeader("Authorization");
 
-        if (headerToken!= null && headerToken.startsWith("Bearer")){
+        if (headerToken == null || !headerToken.startsWith("Bearer ")) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("Token invalido!");
+            return;
+        }
 
-            String token = headerToken.replace("Bearer ","");
-
-
+        try {
+            String token = headerToken.substring("Bearer ".length());
             Algorithm algorithm = Algorithm.HMAC256(secret);
-
             JWTVerifier verifier = JWT.require(algorithm)
                     .withIssuer(emissor)
                     .build();
-
             var resultado = verifier.verify(token);
-
-            System.out.println(resultado.getSubject());
-
-
-        }else {
+            request.setAttribute("usuarioCpf", resultado.getSubject());
+        } catch (JWTVerificationException erro) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write("Token invalido!");
             return;

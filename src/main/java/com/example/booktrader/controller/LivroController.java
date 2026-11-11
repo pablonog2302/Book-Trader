@@ -6,7 +6,9 @@ import com.example.booktrader.entities.Usuario;
 import com.example.booktrader.repository.LivroRepository;
 import com.example.booktrader.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -45,22 +47,14 @@ public class LivroController {
     }
 
     @PostMapping("")
-    public ResponseEntity<LivroResponse> post(@RequestBody LivroRequest livroRequest) {
+    public ResponseEntity<LivroResponse> post(
+            @RequestBody LivroRequest livroRequest,
+            HttpServletRequest request) {
 
-        // verifica se o id do usuario foi informado
-        if (livroRequest.getUsuarioId() == null) {
-            return ResponseEntity.badRequest().body(
-                    new LivroResponse(null, "Informe o ID do usuario."));
-        }
-
-        // procura o usuario pelo id
-        Usuario usuarioBanco = usuarioRepository
-                .findById(livroRequest.getUsuarioId()).orElse(null);
-
-        // verifica se o usuario existe
+        Usuario usuarioBanco = buscarUsuarioAutenticado(request);
         if (usuarioBanco == null) {
-            return ResponseEntity.badRequest().body(
-                    new LivroResponse(null, "Usuario nao encontrado."));
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new LivroResponse(null, "Usuario nao autenticado."));
         }
 
         Livro livroBanco = new Livro();
@@ -68,6 +62,7 @@ public class LivroController {
         livroBanco.setTitulo(livroRequest.getTitulo());
         livroBanco.setDescricao(livroRequest.getDescricao());
         livroBanco.setAutor(livroRequest.getAutor());
+        livroBanco.setGenero(livroRequest.getGenero());
         livroBanco.setIsbn(livroRequest.getIsbn());
         livroBanco.setFotoCapa(livroRequest.getFotoCapa());
         livroBanco.setDataCadastro(LocalDateTime.now());
@@ -85,38 +80,79 @@ public class LivroController {
     @PutMapping("/{id}")
     public ResponseEntity<LivroResponse> AtualizarLivro(
             @PathVariable Long id,
-            @RequestBody LivroRequest livroRequest) {
+            @RequestBody LivroRequest livroRequest,
+            HttpServletRequest request) {
 
         Livro livroBanco = livroRepository.findById(id).orElse(null);
 
-        if (livroBanco != null) {
-            livroBanco.setTitulo(livroRequest.getTitulo());
-            livroBanco.setDescricao(livroRequest.getDescricao());
-            livroBanco.setAutor(livroRequest.getAutor());
-            livroBanco.setIsbn(livroRequest.getIsbn());
-            livroBanco.setFotoCapa(livroRequest.getFotoCapa());
-
-            livroRepository.save(livroBanco);
-
-            return ResponseEntity.ok(
-                    new LivroResponse(livroBanco.getId(), "Atualizado com Sucesso"));
+        if (livroBanco == null) {
+            return ResponseEntity.notFound().build();
         }
 
-        return ResponseEntity.notFound().build();
+        ResponseEntity<LivroResponse> respostaAcesso = verificarProprietario(livroBanco, request);
+        if (respostaAcesso != null) {
+            return respostaAcesso;
+        }
+
+        livroBanco.setTitulo(livroRequest.getTitulo());
+        livroBanco.setDescricao(livroRequest.getDescricao());
+        livroBanco.setAutor(livroRequest.getAutor());
+        livroBanco.setGenero(livroRequest.getGenero());
+        livroBanco.setIsbn(livroRequest.getIsbn());
+        livroBanco.setFotoCapa(livroRequest.getFotoCapa());
+
+        livroRepository.save(livroBanco);
+
+        return ResponseEntity.ok(
+                new LivroResponse(livroBanco.getId(), "Atualizado com Sucesso"));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<LivroResponse> AtualizaStatus(@PathVariable Long id) {
+    public ResponseEntity<LivroResponse> excluirLivro(
+            @PathVariable Long id,
+            HttpServletRequest request) {
 
         Livro livroBanco = livroRepository.findById(id).orElse(null);
 
-        if (livroBanco != null) {
-
-            livroRepository.save(livroBanco);
-            return ResponseEntity.ok(
-                    new LivroResponse(livroBanco.getId(), "Excluido com sucesso"));
+        if (livroBanco == null) {
+            return ResponseEntity.notFound().build();
         }
 
-        return ResponseEntity.notFound().build();
+        ResponseEntity<LivroResponse> respostaAcesso = verificarProprietario(livroBanco, request);
+        if (respostaAcesso != null) {
+            return respostaAcesso;
+        }
+
+        livroRepository.delete(livroBanco);
+        return ResponseEntity.ok(
+                new LivroResponse(livroBanco.getId(), "Excluido com sucesso"));
+    }
+
+    private ResponseEntity<LivroResponse> verificarProprietario(
+            Livro livro,
+            HttpServletRequest request) {
+
+        Usuario usuarioAutenticado = buscarUsuarioAutenticado(request);
+        if (usuarioAutenticado == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new LivroResponse(null, "Usuario nao autenticado."));
+        }
+
+        if (livro.getUsuario() == null
+                || !usuarioAutenticado.getId().equals(livro.getUsuario().getId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new LivroResponse(null, "Voce nao pode alterar este livro."));
+        }
+
+        return null;
+    }
+
+    private Usuario buscarUsuarioAutenticado(HttpServletRequest request) {
+        String usuarioCpf = (String) request.getAttribute("usuarioCpf");
+        if (usuarioCpf == null) {
+            return null;
+        }
+
+        return usuarioRepository.getUsuarioByCpf(usuarioCpf).orElse(null);
     }
 }

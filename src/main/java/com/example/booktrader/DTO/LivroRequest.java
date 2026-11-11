@@ -7,6 +7,7 @@ public class LivroRequest {
     private String titulo;
     private String descricao;
     private String autor;
+    private String genero;
     private String isbn;
     private String fotoCapa;
     private Long usuarioId;
@@ -33,6 +34,14 @@ public class LivroRequest {
 
     public void setAutor(String autor) {
         this.autor = autor;
+    }
+
+    public String getGenero() {
+        return genero;
+    }
+
+    public void setGenero(String genero) {
+        this.genero = genero;
     }
 
     public String getIsbn() {

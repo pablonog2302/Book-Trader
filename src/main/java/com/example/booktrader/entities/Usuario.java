@@ -91,6 +91,7 @@ public class Usuario {
 
 
 
+    @JsonIgnore
     public String getSenha() {
         return senha;
     }

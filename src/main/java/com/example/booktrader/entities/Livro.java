@@ -45,6 +45,7 @@ public class Livro {
     private String descricao;
     private String dataPublicada;
     private String autor;
+    private String genero;
     private String isbn;
     private String fotoCapa;
     private LocalDateTime dataCadastro;
@@ -80,6 +81,14 @@ public class Livro {
 
     public void setAutor(String autor) {
         this.autor = autor;
+    }
+
+    public String getGenero() {
+        return genero;
+    }
+
+    public void setGenero(String genero) {
+        this.genero = genero;
     }
 
     //ISBN

@@ -85,12 +85,16 @@ async function request({ method = 'GET', endpoint, body = null, headers = {}, re
             ? await response.json()
             : await response.text();
 
-        if (response.status === 401 || response.status === 403) {
+        if (response.status === 401) {
             clearToken();
             if (typeof window !== 'undefined') {
                 window.location.href = 'index.html';
             }
             throw new Error('Sessão expirada ou não autorizada.');
+        }
+
+        if (response.status === 403) {
+            throw new Error('Você não tem permissão para realizar esta ação.');
         }
 
         if (!response.ok) {
@@ -155,5 +159,20 @@ async function cadastrarLivro(payload) {
         method: 'POST',
         endpoint: '/livro',
         body: payload,
+    });
+}
+
+async function atualizarLivro(id, payload) {
+    return request({
+        method: 'PUT',
+        endpoint: `/livro/${id}`,
+        body: payload,
+    });
+}
+
+async function excluirLivro(id) {
+    return request({
+        method: 'DELETE',
+        endpoint: `/livro/${id}`,
     });
 }
