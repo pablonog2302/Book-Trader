@@ -1,38 +1,49 @@
 
 package com.example.booktrader.entities;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 public class OfertaDeTroca {
 
-
-    public OfertaDeTroca(){
-        this.id = 1L;
-    }
-
-    public OfertaDeTroca(String solicitante, String receptor, String livroDesejado, String livroOfertado){
-        this.id = 1000L;
-        this.leitorDono = leitorDono;
-        this.livroOfertado = Long.parseLong(livroOfertado);
-    }
+    public OfertaDeTroca(){}
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String leitorDono;
-    private Long livroOfertado;
+    // a coluna antiga fica como texto para preservar os valores ja gravados no postgres
+    @Column(name = "livro_ofertado")
+    private String livroOfertado;
     private String status;
 
+    // cada oferta guarda quem enviou; um usuario pode enviar varias ofertas
+    @ManyToOne
+    @JoinColumn(name = "solicitante_id")
+    private Usuario usuarioSolicitante;
+
+    // guarda o destinatario original para manter o historico apos a troca do livro desejado
+    @ManyToOne
+    @JoinColumn(name = "destinatario_id")
+    private Usuario usuarioDestinatario;
+
+    // registra o livro que o solicitante quer receber
+    @ManyToOne
+    @JoinColumn(name = "livro_desejado_id")
+    private Livro livroDesejado;
+
+    private LocalDateTime dataCadastro;
+
+    private LocalDateTime dataAtualizacao;
+
+    // permite guardar varios livros dentro da mesma oferta
+    @OneToMany(mappedBy = "ofertaDeTroca")
+    private List<LivroOfertado> livrosOfertados = new ArrayList<>();
 
     public Long getId(){return this.id;}
-
-
-    //leitorDono
-
 
     public String getLeitorDono() {
         return leitorDono;
@@ -42,9 +53,7 @@ public class OfertaDeTroca {
         this.leitorDono = leitorDono;
     }
 
-
-
-    //status
+    // status
     public String getStatus() {
         return status;
     }
@@ -53,7 +62,7 @@ public class OfertaDeTroca {
         this.status = status;
     }
 
-    //leitorDono
+    // leitor dono
     public String getSolicitante() {
         return leitorDono;
     }
@@ -62,13 +71,60 @@ public class OfertaDeTroca {
         this.leitorDono = solicitante;
     }
 
-
-    //LIVROOFERTADO
-    public Long getLivroOfertado() {
+    // livro ofertado
+    public String getLivroOfertado() {
         return livroOfertado;
     }
 
-    public void setLivroOfertado(Long livroOfertado) {
+    public void setLivroOfertado(String livroOfertado) {
         this.livroOfertado = livroOfertado;
+    }
+
+    public Usuario getUsuarioSolicitante() {
+        return usuarioSolicitante;
+    }
+
+    public void setUsuarioSolicitante(Usuario solicitante) {
+        this.usuarioSolicitante = solicitante;
+    }
+
+    public Usuario getUsuarioDestinatario() {
+        return usuarioDestinatario;
+    }
+
+    public void setUsuarioDestinatario(Usuario usuarioDestinatario) {
+        this.usuarioDestinatario = usuarioDestinatario;
+    }
+
+    public Livro getLivroDesejado() {
+        return livroDesejado;
+    }
+
+    public void setLivroDesejado(Livro livroDesejado) {
+        this.livroDesejado = livroDesejado;
+    }
+
+    public LocalDateTime getDataCadastro() {
+        return dataCadastro;
+    }
+
+    public void setDataCadastro(LocalDateTime dataCadastro) {
+        this.dataCadastro = dataCadastro;
+    }
+
+    public LocalDateTime getDataAtualizacao() {
+        return dataAtualizacao;
+    }
+
+    public void setDataAtualizacao(LocalDateTime dataAtualizacao) {
+        this.dataAtualizacao = dataAtualizacao;
+    }
+
+    public List<LivroOfertado> getLivrosOfertados() {
+        return livrosOfertados;
+    }
+
+    public void setLivrosOfertados(List<LivroOfertado> livrosOfertados) {
+        this.livrosOfertados = livrosOfertados;
     }
 }

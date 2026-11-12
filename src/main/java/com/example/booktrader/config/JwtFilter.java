@@ -32,6 +32,8 @@ public class JwtFilter extends OncePerRequestFilter {
         String caminho = request.getRequestURI();
 
         if(caminho.equals("/login") ||
+                // permite o cadastro publico sem liberar as demais rotas de usuarios
+                (caminho.equals("/usuarios") && request.getMethod().equals("POST")) ||
                 caminho.startsWith("/swagger-ui") ||
                 caminho.startsWith("/webjars") ||
                 caminho.startsWith("/swagger-resources") ||

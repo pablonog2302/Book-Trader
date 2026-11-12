@@ -8,9 +8,12 @@ import com.example.booktrader.DTO.UsuarioResponse;
 import com.example.booktrader.entities.Usuario;
 import com.example.booktrader.repository.EmpresaRepository;
 import com.example.booktrader.repository.UsuarioRepository;
+import com.example.booktrader.utils.CpfUtils;
+import com.example.booktrader.utils.OnlyNumber;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Repository;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -58,20 +61,34 @@ public class UsuarioController {
     @PostMapping("")
     public ResponseEntity<UsuarioResponse> cadastrarUsuario(@RequestBody UsuarioRequest usuarioRequest){
 
-        //
-        var empresaBanco = empresaRepository.findById(usuarioRequest.getEmpresa_id()).orElse(null);
-
-        if(usuarioRequest.getCpf().isEmpty()){
-            return ResponseEntity.badRequest().build();
+        if (usuarioRequest == null
+                || usuarioRequest.getNome() == null || usuarioRequest.getNome().isBlank()
+                || usuarioRequest.getDataNascimento() == null || usuarioRequest.getDataNascimento().isBlank()
+                || usuarioRequest.getSenha() == null || usuarioRequest.getSenha().isBlank()
+                || !CpfUtils.isValidCpf(usuarioRequest.getCpf())) {
+            return ResponseEntity.badRequest().body(
+                    new UsuarioResponse(null, "Informe nome, CPF valido, data de nascimento e senha."));
         }
 
+        String cpf = OnlyNumber.apenasNumeros(usuarioRequest.getCpf());
+        if (usuarioRepository.existsUsuarioByCpf(cpf)) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                    new UsuarioResponse(null, "Ja existe um usuario cadastrado com este CPF."));
+        }
 
+        var empresaBanco = usuarioRequest.getEmpresa_id() == null
+                ? null
+                : empresaRepository.findById(usuarioRequest.getEmpresa_id()).orElse(null);
+        if (usuarioRequest.getEmpresa_id() != null && empresaBanco == null) {
+            return ResponseEntity.badRequest().body(
+                    new UsuarioResponse(null, "Empresa nao encontrada."));
+        }
 
         Usuario usuarioBanco = new Usuario();
 
-        usuarioBanco.setNome(usuarioRequest.getNome());
-        usuarioBanco.setCpf(usuarioRequest.getCpf());
-        usuarioBanco.setDataNascimento(usuarioRequest.getDataNascimento());
+        usuarioBanco.setNome(usuarioRequest.getNome().trim());
+        usuarioBanco.setCpf(cpf);
+        usuarioBanco.setDataNascimento(usuarioRequest.getDataNascimento().trim());
         usuarioBanco.setSenha(usuarioRequest.getSenha());
         usuarioBanco.setEmpresa(empresaBanco);
 
@@ -80,9 +97,18 @@ public class UsuarioController {
 
 
         //salvando no banco
-        usuarioRepository.save(usuarioBanco);
+        try {
+            usuarioRepository.save(usuarioBanco);
+        } catch (DataIntegrityViolationException erro) {
+            if (usuarioRepository.existsUsuarioByCpf(cpf)) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                        new UsuarioResponse(null, "Ja existe um usuario cadastrado com este CPF."));
+            }
+            throw erro;
+        }
 
-        return ResponseEntity.ok(new UsuarioResponse(usuarioBanco.getId(), "Cadastrado Com Sucesso"));
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                new UsuarioResponse(usuarioBanco.getId(), "Usuario cadastrado com sucesso."));
 
     }
 

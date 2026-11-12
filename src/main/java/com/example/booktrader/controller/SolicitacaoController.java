@@ -1,99 +1,50 @@
 package com.example.booktrader.controller;
 
 import com.example.booktrader.DTO.AtualizaStatusSolicitacao;
-import com.example.booktrader.DTO.SolicitacaoRequest;
-import com.example.booktrader.DTO.SolicitacaoResponse;
-import com.example.booktrader.entities.Solicitacao;
-import com.example.booktrader.repository.SolicitacaoRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.example.booktrader.DTO.OfertaDeTrocaConsultaResponse;
+import com.example.booktrader.service.OfertaDeTrocaService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
 @RequestMapping("/solicitacao")
-public class SolicitacaoController { 
+public class SolicitacaoController {
 
-    @Autowired
-    private SolicitacaoRepository solicitacaoRepository;
+    private final OfertaDeTrocaService ofertaService;
+
+    public SolicitacaoController(OfertaDeTrocaService ofertaService) {
+        this.ofertaService = ofertaService;
+    }
 
     @GetMapping
-    public List<Solicitacao> consultaSolicitacao() {
-        return solicitacaoRepository.findAll();
+    public List<OfertaDeTrocaConsultaResponse> consultarRecebidas(HttpServletRequest request) {
+        return ofertaService.consultarRecebidas((String) request.getAttribute("usuarioCpf"));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Solicitacao> consultaSolicitacaoPorId(@PathVariable Long id) {
-        var solicitacao = solicitacaoRepository.findById(id).orElse(null);
-
-        if (solicitacao == null) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(solicitacao);
-    }
-
-    @PostMapping("")
-    public ResponseEntity<SolicitacaoResponse> post(@RequestBody SolicitacaoRequest solicitacaoRequest) {
-
-        Solicitacao solicitacaoBanco = new Solicitacao();
-
-        solicitacaoBanco.setOfertaDeTroca(solicitacaoRequest.getOfertaDeTroca());
-        solicitacaoBanco.setDataCadastro(LocalDateTime.now());
-
-        solicitacaoRepository.save(solicitacaoBanco);
-
-        return ResponseEntity.ok(new SolicitacaoResponse(solicitacaoBanco.getId(),
-                "Solicitação Cadastrada Com Sucesso!"));
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<SolicitacaoResponse> atualizarSolicitacao(@PathVariable Long id, @RequestBody SolicitacaoRequest solicitacaoRequest) {
-
-        // consulta no banco
-        Solicitacao solicitacaoBanco = solicitacaoRepository.findById(id).orElse(null);
-
-        if (solicitacaoBanco != null) {
-            solicitacaoBanco.setOfertaDeTroca(solicitacaoRequest.getOfertaDeTroca());
-            solicitacaoBanco.setDataAtualizacao(LocalDateTime.now());
-
-            solicitacaoRepository.save(solicitacaoBanco);
-            return ResponseEntity.ok(new SolicitacaoResponse(solicitacaoBanco.getId(), "Cadastro Com Sucesso"));
-        } 
-
-        return ResponseEntity.notFound().build();
+    public ResponseEntity<OfertaDeTrocaConsultaResponse> consultarRecebida(
+            @PathVariable Long id,
+            HttpServletRequest request) {
+        return ResponseEntity.ok(
+                ofertaService.consultarRecebida(id, (String) request.getAttribute("usuarioCpf")));
     }
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<SolicitacaoResponse> atualizarStatus(@PathVariable Long id, @RequestBody AtualizaStatusSolicitacao solicitacaoRequest) {
-
-        // consulta no banco
-        Solicitacao solicitacaoBanco = solicitacaoRepository.findById(id).orElse(null);
-
-        if (solicitacaoBanco != null) {
-            solicitacaoBanco.setStatus(solicitacaoRequest.getStatus());
-
-            solicitacaoRepository.save(solicitacaoBanco);
-            return ResponseEntity.ok(new SolicitacaoResponse(solicitacaoBanco.getId(), "Cadastro Com Sucesso"));
-        }
-
-        return ResponseEntity.notFound().build();
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<SolicitacaoResponse> deletarSolicitacao(@PathVariable Long id) {
-
-        // consulta no banco
-        Solicitacao solicitacaoBanco = solicitacaoRepository.findById(id).orElse(null);
-
-        if (solicitacaoBanco != null) {
-            solicitacaoBanco.setStatus("D");
-
-            solicitacaoRepository.save(solicitacaoBanco);
-            return ResponseEntity.ok(new SolicitacaoResponse(solicitacaoBanco.getId(), "Excluído Com Sucesso"));
-        }
-
-        return ResponseEntity.notFound().build();
+    public ResponseEntity<OfertaDeTrocaConsultaResponse> decidirOferta(
+            @PathVariable Long id,
+            @RequestBody AtualizaStatusSolicitacao decisao,
+            HttpServletRequest request) {
+        return ResponseEntity.ok(ofertaService.decidirOferta(
+                id,
+                decisao,
+                (String) request.getAttribute("usuarioCpf")));
     }
 }

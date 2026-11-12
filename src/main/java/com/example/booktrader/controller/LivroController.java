@@ -4,6 +4,8 @@ import com.example.booktrader.DTO.*;
 import com.example.booktrader.entities.Livro;
 import com.example.booktrader.entities.Usuario;
 import com.example.booktrader.repository.LivroRepository;
+import com.example.booktrader.repository.LivroOfertadoRepository;
+import com.example.booktrader.repository.OfertaDeTrocaRepository;
 import com.example.booktrader.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -23,6 +25,12 @@ public class LivroController {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private OfertaDeTrocaRepository ofertaRepository;
+
+    @Autowired
+    private LivroOfertadoRepository livroOfertadoRepository;
 
     @GetMapping
     public List<Livro> ConsultaLivro() {
@@ -121,6 +129,13 @@ public class LivroController {
         ResponseEntity<LivroResponse> respostaAcesso = verificarProprietario(livroBanco, request);
         if (respostaAcesso != null) {
             return respostaAcesso;
+        }
+
+        if (ofertaRepository.existsByLivroDesejadoId(id)
+                || livroOfertadoRepository.existsByLivroId(id)) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new LivroResponse(null,
+                            "Este livro faz parte do historico de ofertas e nao pode ser excluido."));
         }
 
         livroRepository.delete(livroBanco);

@@ -31,6 +31,34 @@
                 <button id="submit-button" type="submit">Entrar</button>
                 <p id="feedback" class="message" role="status" aria-live="polite"></p>
             </form>
+
+            <button id="mostrarCadastro" type="button">Criar uma conta</button>
+
+            <form id="cadastroForm" hidden>
+                <div class="form-field">
+                    <label for="novoNome">Nome:</label>
+                    <input id="novoNome" name="nome" type="text" autocomplete="name" required>
+                </div>
+
+                <div class="form-field">
+                    <label for="novoCpf">CPF:</label>
+                    <input id="novoCpf" name="cpf" type="text" autocomplete="username" required>
+                </div>
+
+                <div class="form-field">
+                    <label for="novaDataNascimento">Data de nascimento:</label>
+                    <input id="novaDataNascimento" name="dataNascimento" type="date" required>
+                </div>
+
+                <div class="form-field">
+                    <label for="novaSenha">Senha:</label>
+                    <input id="novaSenha" name="senha" type="password" autocomplete="new-password" required>
+                </div>
+
+                <button type="submit">Cadastrar</button>
+                <button id="voltarLogin" type="button">Voltar para entrar</button>
+                <p id="cadastroFeedback" class="message" role="status" aria-live="polite"></p>
+            </form>
         </section>
     </main>
     <script src="js/api.js"></script>

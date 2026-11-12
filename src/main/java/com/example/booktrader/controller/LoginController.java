@@ -6,6 +6,7 @@ import com.example.booktrader.DTO.LoginRequest;
 import com.example.booktrader.DTO.LoginResponse;
 import com.example.booktrader.entities.Usuario;
 import com.example.booktrader.repository.UsuarioRepository;
+import com.example.booktrader.utils.OnlyNumber;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -35,22 +36,23 @@ public class LoginController {
 
     @PostMapping
     public ResponseEntity<LoginResponse> logar(@RequestBody LoginRequest loginRequest){
+        if (loginRequest == null || loginRequest.getLogin() == null
+                || loginRequest.getLogin().isBlank() || loginRequest.getSenha() == null
+                || loginRequest.getSenha().isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
 
+        String cpf = OnlyNumber.apenasNumeros(loginRequest.getLogin());
+        if (usuarioRepository.existsUsuarioByCpfAndSenha(cpf, loginRequest.getSenha()) ){
 
-
-
-        //Usuario usuarioBanco = usuarioRepository
-
-        if (usuarioRepository.existsUsuarioByCpfAndSenha(loginRequest.getLogin(), loginRequest.getSenha()) ){
-
-            Usuario usuarioBanco = usuarioRepository.getUsuarioByCpf(loginRequest.getLogin()).orElse(null);
+            Usuario usuarioBanco = usuarioRepository.getUsuarioByCpf(cpf).orElse(null);
 
             //JWT Metodo (AULA Q NAO VIM)
             Algorithm algorithm = Algorithm.HMAC256(secret);
 
             String token = JWT.create()
                     .withIssuer(emissor)
-                    .withSubject(loginRequest.getLogin())
+                    .withSubject(cpf)
                     .withExpiresAt(gerarDataExpiracao())
                     .sign(algorithm);
 

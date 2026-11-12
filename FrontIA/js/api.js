@@ -81,7 +81,7 @@ async function request({ method = 'GET', endpoint, body = null, headers = {}, re
     try {
         const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
         const contentType = response.headers.get('content-type') || '';
-        const data = contentType.includes('application/json')
+        const data = contentType.includes('application/json') || contentType.includes('+json')
             ? await response.json()
             : await response.text();
 
@@ -101,7 +101,7 @@ async function request({ method = 'GET', endpoint, body = null, headers = {}, re
             throw new Error(
                 typeof data === 'string'
                     ? data
-                    : JSON.stringify(data, null, 2)
+                    : data.mensagem || data.message || data.detail || JSON.stringify(data, null, 2)
             );
         }
 
@@ -174,5 +174,51 @@ async function excluirLivro(id) {
     return request({
         method: 'DELETE',
         endpoint: `/livro/${id}`,
+    });
+}
+
+async function cadastrarUsuario(payload) {
+    return request({
+        method: 'POST',
+        endpoint: '/usuarios',
+        body: payload,
+        requireAuth: false,
+    });
+}
+
+async function getOfertasEnviadas() {
+    return request({
+        method: 'GET',
+        endpoint: '/oferta',
+    });
+}
+
+async function criarOferta(payload) {
+    return request({
+        method: 'POST',
+        endpoint: '/oferta',
+        body: payload,
+    });
+}
+
+async function cancelarOferta(id) {
+    return request({
+        method: 'DELETE',
+        endpoint: `/oferta/${id}`,
+    });
+}
+
+async function getSolicitacoesRecebidas() {
+    return request({
+        method: 'GET',
+        endpoint: '/solicitacao',
+    });
+}
+
+async function decidirSolicitacao(id, payload) {
+    return request({
+        method: 'PATCH',
+        endpoint: `/solicitacao/${id}/status`,
+        body: payload,
     });
 }

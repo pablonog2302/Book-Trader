@@ -12,7 +12,9 @@ import java.util.List;
 import java.util.Set;
 
 
+// o indice unico do banco tambem bloqueia cpfs repetidos em cadastros simultaneos.
 @Entity
+@Table(indexes = @Index(name = "uk_usuario_cpf", columnList = "cpf", unique = true))
 public class Usuario {
 
     public Usuario(){}

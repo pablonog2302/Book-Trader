@@ -1,25 +1,27 @@
 
 package com.example.booktrader.DTO;
 
+import java.util.List;
+
 public class OfertaDeTrocaRequest {
 
-    private Long leitorDono;
-    private Long livroOfertado;
+    private Long livroDesejadoId;
+    private List<Long> livrosOferecidosIds;
 
-    public Long getLeitorDono() {
-        return leitorDono;
+    public Long getLivroDesejadoId() {
+        return livroDesejadoId;
     }
 
-    public void setLeitorDono(Long leitorDono) {
-        this.leitorDono = leitorDono;
+    public void setLivroDesejadoId(Long livroDesejadoId) {
+        this.livroDesejadoId = livroDesejadoId;
     }
 
-    public Long getLivroOfertado() {
-        return livroOfertado;
+    public List<Long> getLivrosOferecidosIds() {
+        return livrosOferecidosIds;
     }
 
-    public void setLivroOfertado(Long livroOfertado) {
-        this.livroOfertado = livroOfertado;
+    public void setLivrosOferecidosIds(List<Long> livrosOferecidosIds) {
+        this.livrosOferecidosIds = livrosOferecidosIds;
     }
 
 }
