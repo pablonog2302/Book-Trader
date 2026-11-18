@@ -3,7 +3,6 @@ package com.example.booktrader.entities;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 
 @Entity
 public class Livro {
@@ -13,11 +12,10 @@ public class Livro {
 
     //CONSTRUTOR
 
-    public Livro(String titulo, String descricao, String dataPublicada, String autor, String isbn, String fotoCapa){
+    public Livro(String titulo, String descricao, String autor, String isbn, String fotoCapa){
 
         this.titulo = titulo;
         this.descricao = descricao;
-        this.dataPublicada = dataPublicada;
         this.autor = autor;
         this.isbn = isbn;
         this.fotoCapa = fotoCapa;
@@ -42,8 +40,9 @@ public class Livro {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String titulo;
+
+    @Column (columnDefinition = "TEXT")
     private String descricao;
-    private String dataPublicada;
     private String autor;
     private String genero;
     private String isbn;
@@ -67,13 +66,6 @@ public class Livro {
 
     public void setDescricao(String descricao) {
         this.descricao = descricao;
-    }
-
-    //DATA
-    public String getDataPublicada() {return this.dataPublicada;}
-
-    public void setDataPublicada(String dataPublicada) {
-        this.dataPublicada = dataPublicada;
     }
 
     //AUTOR

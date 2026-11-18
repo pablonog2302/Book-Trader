@@ -19,6 +19,8 @@ public class OfertaDeTroca {
     @Column(name = "livro_ofertado")
     private String livroOfertado;
     private String status;
+    @Column(name = "motivo_encerramento", columnDefinition = "TEXT")
+    private String motivoEncerramento;
 
     // cada oferta guarda quem enviou; um usuario pode enviar varias ofertas
     @ManyToOne
@@ -60,6 +62,14 @@ public class OfertaDeTroca {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getMotivoEncerramento() {
+        return motivoEncerramento;
+    }
+
+    public void setMotivoEncerramento(String motivoEncerramento) {
+        this.motivoEncerramento = motivoEncerramento;
     }
 
     // leitor dono

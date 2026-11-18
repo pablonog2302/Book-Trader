@@ -2,24 +2,32 @@ package com.example.booktrader.utils;
 
 public class CpfUtils {
 
+    public static boolean possuiFormatoNumericoValido(String cpf) {
+        return cpf != null && cpf.matches("[0-9]{11}");
+    }
+
+    public static String mensagemDeErro(String cpf) {
+        if (!possuiFormatoNumericoValido(cpf)) {
+            return "O CPF deve conter exatamente 11 números, sem letras ou símbolos.";
+        }
+        if (!isValidCpf(cpf)) {
+            return "O CPF informado é inválido.";
+        }
+        return null;
+    }
+
     /**
-     * Valida um número de CPF (com ou sem formatação).
+     * Valida um CPF composto por exatamente 11 algarismos.
      *
      * @param cpf String contendo o CPF
      * @return true se o CPF for válido, false caso contrário
      */
     public static boolean isValidCpf(String cpf) {
-        if (cpf == null || cpf.isBlank()) {
+        if (!possuiFormatoNumericoValido(cpf)) {
             return false;
         }
 
-        // Remove tudo o que não for dígito
-        String numeros = OnlyNumber.apenasNumeros(cpf);
-
-        // CPF deve ter exatamente 11 dígitos
-        if (numeros.length() != 11) {
-            return false;
-        }
+        String numeros = cpf;
 
         // Descarta CPFs com todos os dígitos iguais (ex: 000.000.000-00)
         if (numeros.matches("(\\d)\\1{10}")) {

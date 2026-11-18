@@ -3,13 +3,12 @@ package com.example.booktrader.entities;
 
 import com.example.booktrader.utils.CpfUtils;
 import com.example.booktrader.utils.OnlyNumber;
+import com.example.booktrader.utils.SenhaUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 
 // o indice unico do banco tambem bloqueia cpfs repetidos em cadastros simultaneos.
@@ -43,38 +42,6 @@ public class Usuario {
 
     private String senha;
 
-    //06102026
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "usuario_cursos",
-            joinColumns = @JoinColumn(name = "usuario_id"),
-            inverseJoinColumns = @JoinColumn(name = "curso_id")
-    )
-    private Set<Curso> cursos = new HashSet<>();
-    //Get e set 06102026
-    public Set<Curso> getCursos() {
-        return cursos;
-    }
-
-    public void setCursos(Set<Curso> cursos) {
-        this.cursos = cursos;
-    }
-    //
-
-
-    //FK
-    @ManyToOne
-    @JoinColumn(name = "empresa_id", referencedColumnName = "id")
-    private Empresa empresa;
-
-    public Empresa getEmpresa() {
-        return empresa;
-    }
-
-    public void setEmpresa(Empresa empresa) {
-        this.empresa = empresa;
-    }
-
     // impede a repeticao dos livros na resposta json
     @JsonIgnore
     @OneToMany(mappedBy = "usuario")
@@ -99,6 +66,10 @@ public class Usuario {
     }
 
     public void setSenha(String senha) {
+        String mensagemDeErro = SenhaUtils.mensagemDeErro(senha);
+        if (mensagemDeErro != null) {
+            throw new IllegalArgumentException(mensagemDeErro);
+        }
         this.senha = senha;
     }
 
@@ -125,7 +96,7 @@ public class Usuario {
     public void setCpf(String cpf) {
 
         if(!CpfUtils.isValidCpf(cpf)){
-            throw new RuntimeException("CPF Invalido;");
+            throw new IllegalArgumentException("CPF inválido.");
         }
         this.cpf = OnlyNumber.apenasNumeros(cpf);
     }

@@ -101,7 +101,7 @@ class OfertaDeTrocaServiceTest {
     }
 
     @Test
-    void aceitaParteDosLivrosTransfereEFechaOfertasConflitantes() {
+    void aceitaParteDosLivrosEAtualizaSomenteOItemTransferidoNasOutrasOfertas() {
         OfertaDeTroca oferta = oferta(100L, solicitante, desejado, "PENDENTE");
         LivroOfertado itemAceito = item(oferta, oferecido);
         LivroOfertado itemRecusado = item(oferta, outroOferecido);
@@ -109,13 +109,17 @@ class OfertaDeTrocaServiceTest {
 
         Livro livroDesejadoPelaOutraOferta = livro(30L, "Outro desejado", proprietario);
         OfertaDeTroca conflito = oferta(101L, proprietario, livroDesejadoPelaOutraOferta, "PENDENTE");
-        conflito.setLivrosOfertados(List.of(item(conflito, oferecido)));
+        LivroOfertado itemTransferido = item(conflito, oferecido);
+        LivroOfertado itemMantido = item(conflito, outroOferecido);
+        conflito.setLivrosOfertados(List.of(itemTransferido, itemMantido));
 
         when(usuarioRepository.getUsuarioByCpf("cpf-bia")).thenReturn(Optional.of(proprietario));
         when(ofertaRepository.findByStatusParaAtualizacao("PENDENTE"))
                 .thenReturn(List.of(oferta, conflito), List.of(conflito));
         when(livroOfertadoRepository.findByOfertaDeTrocaIdOrderById(100L))
                 .thenReturn(List.of(itemAceito, itemRecusado));
+        when(livroOfertadoRepository.findByOfertaDeTrocaIdOrderById(101L))
+                .thenReturn(List.of(itemTransferido, itemMantido));
         when(livroRepository.findAllByIdsParaAtualizacao(List.of(10L, 20L)))
                 .thenReturn(List.of(oferecido, desejado));
         when(ofertaRepository.save(any(OfertaDeTroca.class)))
@@ -137,7 +141,42 @@ class OfertaDeTrocaServiceTest {
         assertEquals(solicitante, outroOferecido.getUsuario());
         assertEquals("ACEITO", itemAceito.getStatus());
         assertEquals("RECUSADO", itemRecusado.getStatus());
-        assertEquals("CANCELADA", conflito.getStatus());
+        assertEquals("PENDENTE", conflito.getStatus());
+        assertEquals("REMOVIDO_TRANSFERENCIA", itemTransferido.getStatus());
+        assertEquals("PENDENTE", itemMantido.getStatus());
+    }
+
+    @Test
+    void aceitaTodosOsLivrosSelecionadosETransfereAsPropriedades() {
+        OfertaDeTroca oferta = oferta(100L, solicitante, desejado, "PENDENTE");
+        LivroOfertado primeiroItem = item(oferta, oferecido);
+        LivroOfertado segundoItem = item(oferta, outroOferecido);
+        oferta.setLivrosOfertados(List.of(primeiroItem, segundoItem));
+        when(usuarioRepository.getUsuarioByCpf("cpf-bia")).thenReturn(Optional.of(proprietario));
+        when(ofertaRepository.findByStatusParaAtualizacao("PENDENTE")).thenReturn(List.of(oferta));
+        when(livroOfertadoRepository.findByOfertaDeTrocaIdOrderById(100L))
+                .thenReturn(List.of(primeiroItem, segundoItem));
+        when(livroRepository.findAllByIdsParaAtualizacao(List.of(10L, 11L, 20L)))
+                .thenReturn(List.of(oferecido, outroOferecido, desejado));
+        when(ofertaRepository.save(any(OfertaDeTroca.class)))
+                .thenAnswer(invocacao -> invocacao.getArgument(0));
+        when(livroRepository.saveAll(org.mockito.ArgumentMatchers.<Livro>anyList()))
+                .thenAnswer(invocacao -> invocacao.getArgument(0));
+        when(livroOfertadoRepository.saveAll(org.mockito.ArgumentMatchers.<LivroOfertado>anyList()))
+                .thenAnswer(invocacao -> invocacao.getArgument(0));
+
+        AtualizaStatusSolicitacao decisao = new AtualizaStatusSolicitacao();
+        decisao.setStatus("ACEITA");
+        decisao.setLivrosAceitosIds(List.of(10L, 11L));
+
+        var resposta = ofertaService.decidirOferta(100L, decisao, "cpf-bia");
+
+        assertEquals("ACEITA", resposta.getStatus());
+        assertEquals(proprietario, oferecido.getUsuario());
+        assertEquals(proprietario, outroOferecido.getUsuario());
+        assertEquals(solicitante, desejado.getUsuario());
+        assertEquals("ACEITO", primeiroItem.getStatus());
+        assertEquals("ACEITO", segundoItem.getStatus());
     }
 
     @Test
@@ -156,14 +195,194 @@ class OfertaDeTrocaServiceTest {
 
         AtualizaStatusSolicitacao decisao = new AtualizaStatusSolicitacao();
         decisao.setStatus("RECUSADA");
+        decisao.setMotivo("Não tenho interesse nesta troca.");
 
         var resposta = ofertaService.decidirOferta(100L, decisao, "cpf-bia");
 
         assertEquals("RECUSADA", resposta.getStatus());
+        assertEquals("Não tenho interesse nesta troca.", resposta.getMotivoEncerramento());
         assertEquals(proprietario, desejado.getUsuario());
         assertEquals(solicitante, oferecido.getUsuario());
         assertEquals("RECUSADO", item.getStatus());
         verify(livroRepository, never()).saveAll(org.mockito.ArgumentMatchers.<Livro>anyList());
+    }
+
+    @Test
+    void impedeOfertaComLivroJaEnvolvidoEmOutraOfertaPendente() {
+        when(usuarioRepository.getUsuarioByCpf("cpf-ana")).thenReturn(Optional.of(solicitante));
+        when(livroRepository.findAllByIdsParaAtualizacao(List.of(10L, 20L)))
+                .thenReturn(List.of(oferecido, desejado));
+        when(ofertaRepository.countOfertasPendentesPorLivros("PENDENTE", "PENDENTE", List.of(10L, 20L)))
+                .thenReturn(1L);
+
+        OfertaDeTrocaRequest dados = new OfertaDeTrocaRequest();
+        dados.setLivroDesejadoId(20L);
+        dados.setLivrosOferecidosIds(List.of(10L));
+
+        ResponseStatusException erro = assertThrows(
+                ResponseStatusException.class,
+                () -> ofertaService.criarOferta(dados, "cpf-ana"));
+
+        assertEquals(HttpStatus.CONFLICT, erro.getStatusCode());
+        verify(ofertaRepository, never()).save(any(OfertaDeTroca.class));
+    }
+
+    @Test
+    void removeLivroOfertadoSemEncerrarOfertaPendente() {
+        OfertaDeTroca oferta = oferta(100L, solicitante, desejado, "PENDENTE");
+        LivroOfertado itemRemovido = item(oferta, oferecido);
+        LivroOfertado itemMantido = item(oferta, outroOferecido);
+        oferta.setLivrosOfertados(List.of(itemRemovido, itemMantido));
+
+        when(usuarioRepository.getUsuarioByCpf("cpf-ana")).thenReturn(Optional.of(solicitante));
+        when(ofertaRepository.findByIdParaAtualizacao(100L)).thenReturn(Optional.of(oferta));
+        when(livroOfertadoRepository.findByOfertaDeTrocaIdOrderById(100L))
+                .thenReturn(List.of(itemRemovido, itemMantido));
+        when(ofertaRepository.save(any(OfertaDeTroca.class)))
+                .thenAnswer(invocacao -> invocacao.getArgument(0));
+
+        var resposta = ofertaService.removerLivroOfertado(100L, 10L, "cpf-ana");
+
+        assertEquals("PENDENTE", resposta.getStatus());
+        assertEquals("REMOVIDO", itemRemovido.getStatus());
+        assertEquals("PENDENTE", itemMantido.getStatus());
+        verify(livroOfertadoRepository).save(itemRemovido);
+    }
+
+    @Test
+    void naoPermiteRemoverUltimoLivroOfertadoDaOferta() {
+        OfertaDeTroca oferta = oferta(100L, solicitante, desejado, "PENDENTE");
+        LivroOfertado item = item(oferta, oferecido);
+        oferta.setLivrosOfertados(List.of(item));
+        when(usuarioRepository.getUsuarioByCpf("cpf-ana")).thenReturn(Optional.of(solicitante));
+        when(ofertaRepository.findByIdParaAtualizacao(100L)).thenReturn(Optional.of(oferta));
+        when(livroOfertadoRepository.findByOfertaDeTrocaIdOrderById(100L)).thenReturn(List.of(item));
+
+        ResponseStatusException erro = assertThrows(
+                ResponseStatusException.class,
+                () -> ofertaService.removerLivroOfertado(100L, 10L, "cpf-ana"));
+
+        assertEquals(HttpStatus.CONFLICT, erro.getStatusCode());
+        assertEquals("PENDENTE", item.getStatus());
+        verify(livroOfertadoRepository, never()).save(item);
+    }
+
+    @Test
+    void cancelaOfertaRegistrandoMotivoInformado() {
+        OfertaDeTroca oferta = oferta(100L, solicitante, desejado, "PENDENTE");
+        LivroOfertado item = item(oferta, oferecido);
+        when(usuarioRepository.getUsuarioByCpf("cpf-ana")).thenReturn(Optional.of(solicitante));
+        when(ofertaRepository.findByIdParaAtualizacao(100L)).thenReturn(Optional.of(oferta));
+        when(livroOfertadoRepository.findByOfertaDeTrocaIdOrderById(100L)).thenReturn(List.of(item));
+        when(ofertaRepository.save(any(OfertaDeTroca.class)))
+                .thenAnswer(invocacao -> invocacao.getArgument(0));
+
+        ofertaService.cancelarOferta(100L, "Não posso mais realizar a troca.", "cpf-ana");
+
+        assertEquals("CANCELADA", oferta.getStatus());
+        assertEquals("Não posso mais realizar a troca.", oferta.getMotivoEncerramento());
+        assertEquals("CANCELADA", item.getStatus());
+    }
+
+    @Test
+    void naoPermiteAceitarLivroRemovidoDaOferta() {
+        OfertaDeTroca oferta = oferta(100L, solicitante, desejado, "PENDENTE");
+        LivroOfertado itemRemovido = item(oferta, oferecido);
+        itemRemovido.setStatus("REMOVIDO");
+        LivroOfertado itemAtivo = item(oferta, outroOferecido);
+        oferta.setLivrosOfertados(List.of(itemRemovido, itemAtivo));
+
+        when(usuarioRepository.getUsuarioByCpf("cpf-bia")).thenReturn(Optional.of(proprietario));
+        when(ofertaRepository.findByStatusParaAtualizacao("PENDENTE")).thenReturn(List.of(oferta));
+        when(livroOfertadoRepository.findByOfertaDeTrocaIdOrderById(100L))
+                .thenReturn(List.of(itemRemovido, itemAtivo));
+
+        AtualizaStatusSolicitacao decisao = new AtualizaStatusSolicitacao();
+        decisao.setStatus("ACEITA");
+        decisao.setLivrosAceitosIds(List.of(10L));
+
+        ResponseStatusException erro = assertThrows(
+                ResponseStatusException.class,
+                () -> ofertaService.decidirOferta(100L, decisao, "cpf-bia"));
+
+        assertEquals(HttpStatus.BAD_REQUEST, erro.getStatusCode());
+        assertEquals("REMOVIDO", itemRemovido.getStatus());
+    }
+
+    @Test
+    void cancelaOfertaQuandoLivroDesejadoETransferidoERegistraMotivo() {
+        OfertaDeTroca ofertaAceita = oferta(100L, solicitante, desejado, "PENDENTE");
+        LivroOfertado itemAceito = item(ofertaAceita, oferecido);
+        ofertaAceita.setLivrosOfertados(List.of(itemAceito));
+
+        OfertaDeTroca outraOferta = oferta(101L, solicitante, desejado, "PENDENTE");
+        LivroOfertado outroItem = item(outraOferta, outroOferecido);
+        outraOferta.setLivrosOfertados(List.of(outroItem));
+
+        when(usuarioRepository.getUsuarioByCpf("cpf-bia")).thenReturn(Optional.of(proprietario));
+        when(ofertaRepository.findByStatusParaAtualizacao("PENDENTE"))
+                .thenReturn(List.of(ofertaAceita, outraOferta), List.of(outraOferta));
+        when(livroOfertadoRepository.findByOfertaDeTrocaIdOrderById(100L)).thenReturn(List.of(itemAceito));
+        when(livroOfertadoRepository.findByOfertaDeTrocaIdOrderById(101L)).thenReturn(List.of(outroItem));
+        when(livroRepository.findAllByIdsParaAtualizacao(List.of(10L, 20L)))
+                .thenReturn(List.of(oferecido, desejado));
+        when(ofertaRepository.save(any(OfertaDeTroca.class)))
+                .thenAnswer(invocacao -> invocacao.getArgument(0));
+        when(livroRepository.saveAll(org.mockito.ArgumentMatchers.<Livro>anyList()))
+                .thenAnswer(invocacao -> invocacao.getArgument(0));
+        when(livroOfertadoRepository.saveAll(org.mockito.ArgumentMatchers.<LivroOfertado>anyList()))
+                .thenAnswer(invocacao -> invocacao.getArgument(0));
+
+        AtualizaStatusSolicitacao decisao = new AtualizaStatusSolicitacao();
+        decisao.setStatus("ACEITA");
+        decisao.setLivrosAceitosIds(List.of(10L));
+
+        ofertaService.decidirOferta(100L, decisao, "cpf-bia");
+
+        assertEquals("CANCELADA", outraOferta.getStatus());
+        assertEquals("O livro desejado foi transferido e não está mais disponível para esta negociação.",
+                outraOferta.getMotivoEncerramento());
+        assertEquals("CANCELADA", outroItem.getStatus());
+    }
+
+    @Test
+    void encerraOfertaComMotivoQuandoTodosOsLivrosOferecidosSaoTransferidos() {
+        OfertaDeTroca ofertaAceita = oferta(100L, solicitante, desejado, "PENDENTE");
+        LivroOfertado itemAceito = item(ofertaAceita, oferecido);
+        ofertaAceita.setLivrosOfertados(List.of(itemAceito));
+
+        OfertaDeTroca outraOferta = oferta(
+                101L,
+                solicitante,
+                livro(30L, "Outro desejado", proprietario),
+                "PENDENTE");
+        LivroOfertado itemRemovido = item(outraOferta, oferecido);
+        outraOferta.setLivrosOfertados(List.of(itemRemovido));
+
+        when(usuarioRepository.getUsuarioByCpf("cpf-bia")).thenReturn(Optional.of(proprietario));
+        when(ofertaRepository.findByStatusParaAtualizacao("PENDENTE"))
+                .thenReturn(List.of(ofertaAceita, outraOferta), List.of(outraOferta));
+        when(livroOfertadoRepository.findByOfertaDeTrocaIdOrderById(100L)).thenReturn(List.of(itemAceito));
+        when(livroOfertadoRepository.findByOfertaDeTrocaIdOrderById(101L)).thenReturn(List.of(itemRemovido));
+        when(livroRepository.findAllByIdsParaAtualizacao(List.of(10L, 20L)))
+                .thenReturn(List.of(oferecido, desejado));
+        when(ofertaRepository.save(any(OfertaDeTroca.class)))
+                .thenAnswer(invocacao -> invocacao.getArgument(0));
+        when(livroRepository.saveAll(org.mockito.ArgumentMatchers.<Livro>anyList()))
+                .thenAnswer(invocacao -> invocacao.getArgument(0));
+        when(livroOfertadoRepository.saveAll(org.mockito.ArgumentMatchers.<LivroOfertado>anyList()))
+                .thenAnswer(invocacao -> invocacao.getArgument(0));
+
+        AtualizaStatusSolicitacao decisao = new AtualizaStatusSolicitacao();
+        decisao.setStatus("ACEITA");
+        decisao.setLivrosAceitosIds(List.of(10L));
+
+        ofertaService.decidirOferta(100L, decisao, "cpf-bia");
+
+        assertEquals("CANCELADA", outraOferta.getStatus());
+        assertEquals("REMOVIDO_TRANSFERENCIA", itemRemovido.getStatus());
+        assertEquals("Todos os livros oferecidos foram transferidos e a oferta não pode mais ser concluída.",
+                outraOferta.getMotivoEncerramento());
     }
 
     @Test

@@ -20,6 +20,20 @@ public interface OfertaDeTrocaRepository extends JpaRepository<OfertaDeTroca,Lon
 
     boolean existsByLivroDesejadoId(Long livroId);
 
+    // considera o livro desejado e apenas os itens oferecidos que ainda estao pendentes.
+    @Query("""
+            select count(distinct oferta.id)
+            from OfertaDeTroca oferta
+            left join oferta.livrosOfertados item
+            where oferta.status = :status
+              and (oferta.livroDesejado.id in :livroIds
+                   or (item.livro.id in :livroIds and item.status = :itemStatus))
+            """)
+    long countOfertasPendentesPorLivros(
+            @Param("status") String status,
+            @Param("itemStatus") String itemStatus,
+            @Param("livroIds") List<Long> livroIds);
+
     // o bloqueio impede duas decisoes simultaneas sobre a mesma oferta
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select oferta from OfertaDeTroca oferta where oferta.id = :id")

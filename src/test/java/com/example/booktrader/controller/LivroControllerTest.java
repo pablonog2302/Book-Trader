@@ -15,11 +15,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.Mockito.never;
@@ -104,9 +106,12 @@ class LivroControllerTest {
         when(livroRepository.findById(10L)).thenReturn(Optional.of(livro));
         when(usuarioRepository.getUsuarioByCpf("12345678900")).thenReturn(Optional.of(dono));
 
-        var resposta = livroController.AtualizarLivro(10L, new LivroRequest(), request);
+        var erro = assertThrows(
+                ResponseStatusException.class,
+                () -> livroController.AtualizarLivro(10L, new LivroRequest(), request));
 
-        assertEquals(HttpStatus.FORBIDDEN, resposta.getStatusCode());
+        assertEquals(HttpStatus.FORBIDDEN, erro.getStatusCode());
+        assertEquals("Você só pode alterar livros cadastrados por você.", erro.getReason());
         verify(livroRepository, never()).save(livro);
     }
 
@@ -116,9 +121,12 @@ class LivroControllerTest {
         when(livroRepository.findById(10L)).thenReturn(Optional.of(livro));
         when(usuarioRepository.getUsuarioByCpf("12345678900")).thenReturn(Optional.of(dono));
 
-        var resposta = livroController.excluirLivro(10L, request);
+        var erro = assertThrows(
+                ResponseStatusException.class,
+                () -> livroController.excluirLivro(10L, request));
 
-        assertEquals(HttpStatus.FORBIDDEN, resposta.getStatusCode());
+        assertEquals(HttpStatus.FORBIDDEN, erro.getStatusCode());
+        assertEquals("Você só pode alterar livros cadastrados por você.", erro.getReason());
         verify(livroRepository, never()).delete(livro);
     }
 
@@ -139,9 +147,14 @@ class LivroControllerTest {
         when(usuarioRepository.getUsuarioByCpf("12345678900")).thenReturn(Optional.of(dono));
         when(ofertaRepository.existsByLivroDesejadoId(10L)).thenReturn(true);
 
-        var resposta = livroController.excluirLivro(10L, request);
+        var erro = assertThrows(
+                ResponseStatusException.class,
+                () -> livroController.excluirLivro(10L, request));
 
-        assertEquals(HttpStatus.CONFLICT, resposta.getStatusCode());
+        assertEquals(HttpStatus.CONFLICT, erro.getStatusCode());
+        assertEquals(
+                "Este livro faz parte do histórico de ofertas e não pode ser excluído.",
+                erro.getReason());
         verify(livroRepository, never()).delete(livro);
     }
 }

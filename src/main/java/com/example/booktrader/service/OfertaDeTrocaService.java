@@ -33,6 +33,8 @@ public class OfertaDeTrocaService {
     private static final String CANCELADA = "CANCELADA";
     private static final String ITEM_ACEITO = "ACEITO";
     private static final String ITEM_RECUSADO = "RECUSADO";
+    private static final String ITEM_REMOVIDO = "REMOVIDO";
+    private static final String ITEM_REMOVIDO_TRANSFERENCIA = "REMOVIDO_TRANSFERENCIA";
 
     private final OfertaDeTrocaRepository ofertaRepository;
     private final LivroOfertadoRepository livroOfertadoRepository;
@@ -123,6 +125,8 @@ public class OfertaDeTrocaService {
         }
 
         Usuario solicitante = buscarUsuario(cpf);
+        // bloqueia as ofertas pendentes e os livros para evitar reutilizacao simultanea dos mesmos exemplares.
+        ofertaRepository.findByStatusParaAtualizacao(PENDENTE);
         List<Long> ids = new ArrayList<>(dados.getLivrosOferecidosIds());
         ids.add(dados.getLivroDesejadoId());
         List<Livro> livros = livroRepository.findAllByIdsParaAtualizacao(ids);
@@ -137,6 +141,12 @@ public class OfertaDeTrocaService {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Escolha um livro que pertença a outro usuario.");
+        }
+
+        if (ofertaRepository.countOfertasPendentesPorLivros(PENDENTE, PENDENTE, ids) > 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Um dos livros já está envolvido em outra oferta pendente.");
         }
 
         List<Livro> livrosOferecidos = new ArrayList<>();
@@ -228,6 +238,7 @@ public class OfertaDeTrocaService {
                     || !proprietario.getId().equals(livroDesejado.get(0).getUsuario().getId())) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "A propriedade do livro mudou.");
             }
+            oferta.setMotivoEncerramento(validarMotivo(decisao.getMotivo()));
             oferta.setStatus(RECUSADA);
             finalizarItens(itens, ITEM_RECUSADO);
             oferta.setDataAtualizacao(LocalDateTime.now());
@@ -251,7 +262,9 @@ public class OfertaDeTrocaService {
 
         Set<Long> idsOferecidos = new HashSet<>();
         for (LivroOfertado item : itens) {
-            idsOferecidos.add(item.getLivro().getId());
+            if (PENDENTE.equals(item.getStatus())) {
+                idsOferecidos.add(item.getLivro().getId());
+            }
         }
         if (!idsOferecidos.containsAll(decisao.getLivrosAceitosIds())) {
             throw new ResponseStatusException(
@@ -278,15 +291,18 @@ public class OfertaDeTrocaService {
             if (livro.getUsuario() == null || !solicitante.getId().equals(livro.getUsuario().getId())) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Um livro oferecido nao pertence mais ao solicitante.");
             }
+            // os livros aceitos passam ao destinatario; o livro desejado passa ao solicitante.
             livro.setUsuario(proprietario);
         }
         livroDesejado.setUsuario(solicitante);
 
         for (LivroOfertado item : itens) {
-            if (decisao.getLivrosAceitosIds().contains(item.getLivro().getId())) {
-                item.setStatus(ITEM_ACEITO);
-            } else {
-                item.setStatus(ITEM_RECUSADO);
+            if (PENDENTE.equals(item.getStatus())) {
+                if (decisao.getLivrosAceitosIds().contains(item.getLivro().getId())) {
+                    item.setStatus(ITEM_ACEITO);
+                } else {
+                    item.setStatus(ITEM_RECUSADO);
+                }
             }
         }
         oferta.setStatus(ACEITA);
@@ -295,14 +311,15 @@ public class OfertaDeTrocaService {
         livroRepository.saveAll(livrosTransferidos);
         livroOfertadoRepository.saveAll(itens);
         ofertaRepository.save(oferta);
-        cancelarOfertasConflitantes(oferta, idsTransferidos);
+        atualizarOfertasAposTransferencia(oferta, idsTransferidos);
 
         return new OfertaDeTrocaConsultaResponse(oferta);
     }
 
     // o bloqueio e a transacao mantem o cancelamento e o historico consistentes.
+    // apenas o solicitante pode cancelar uma oferta pendente; o motivo e os estados dos itens ficam no historico.
     @Transactional
-    public void cancelarOferta(Long id, String cpf) {
+    public void cancelarOferta(Long id, String motivo, String cpf) {
         Usuario solicitante = buscarUsuario(cpf);
         OfertaDeTroca oferta = ofertaRepository.findByIdParaAtualizacao(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
@@ -318,37 +335,108 @@ public class OfertaDeTrocaService {
         List<LivroOfertado> itens = livroOfertadoRepository.findByOfertaDeTrocaIdOrderById(id);
         finalizarItens(itens, CANCELADA);
         oferta.setLivrosOfertados(itens);
+        oferta.setMotivoEncerramento(validarMotivo(motivo));
         oferta.setStatus(CANCELADA);
         oferta.setDataAtualizacao(LocalDateTime.now());
         ofertaRepository.save(oferta);
         livroOfertadoRepository.saveAll(itens);
     }
 
-    // a troca aceita encerra propostas que dependem de qualquer livro transferido.
-    private void cancelarOfertasConflitantes(OfertaDeTroca ofertaAceita, List<Long> idsTransferidos) {
+    // registra a remocao sem apagar o item do historico e exige ao menos um livro oferecido ativo.
+    @Transactional
+    public OfertaDeTrocaConsultaResponse removerLivroOfertado(Long ofertaId, Long livroId, String cpf) {
+        Usuario solicitante = buscarUsuario(cpf);
+        OfertaDeTroca oferta = ofertaRepository.findByIdParaAtualizacao(ofertaId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        if (oferta.getUsuarioSolicitante() == null
+                || !solicitante.getId().equals(oferta.getUsuarioSolicitante().getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Voce nao pode alterar esta oferta.");
+        }
+        if (!PENDENTE.equals(oferta.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Esta oferta ja foi finalizada.");
+        }
+
+        List<LivroOfertado> itens = livroOfertadoRepository.findByOfertaDeTrocaIdOrderById(ofertaId);
+        LivroOfertado itemRemover = itens.stream()
+                .filter(item -> item.getLivro().getId().equals(livroId))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Livro nao encontrado nesta oferta."));
+
+        if (!PENDENTE.equals(itemRemover.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Este livro nao esta mais ativo na oferta.");
+        }
+        long itensAtivos = itens.stream().filter(item -> PENDENTE.equals(item.getStatus())).count();
+        if (itensAtivos <= 1) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "A oferta precisa manter pelo menos um livro oferecido. Cancele a oferta para encerrá-la.");
+        }
+
+        itemRemover.setStatus(ITEM_REMOVIDO);
+        oferta.setLivrosOfertados(itens);
+        oferta.setDataAtualizacao(LocalDateTime.now());
+        livroOfertadoRepository.save(itemRemover);
+        ofertaRepository.save(oferta);
+        return new OfertaDeTrocaConsultaResponse(oferta);
+    }
+
+    // Preserva o historico dos itens e altera somente o que ficou indisponivel apos a transferencia.
+    private void atualizarOfertasAposTransferencia(OfertaDeTroca ofertaAceita, List<Long> idsTransferidos) {
         List<OfertaDeTroca> pendentes = ofertaRepository.findByStatusParaAtualizacao(PENDENTE);
         for (OfertaDeTroca outraOferta : pendentes) {
             if (outraOferta.getId().equals(ofertaAceita.getId())) {
                 continue;
             }
 
-            boolean livroEnvolvido = outraOferta.getLivroDesejado() != null
+            boolean livroDesejadoTransferido = outraOferta.getLivroDesejado() != null
                     && idsTransferidos.contains(outraOferta.getLivroDesejado().getId());
-            List<LivroOfertado> itens = outraOferta.getLivrosOfertados();
-            for (LivroOfertado item : itens) {
-                if (idsTransferidos.contains(item.getLivro().getId())) {
-                    livroEnvolvido = true;
-                }
-            }
+            List<LivroOfertado> itens =
+                    livroOfertadoRepository.findByOfertaDeTrocaIdOrderById(outraOferta.getId());
+            outraOferta.setLivrosOfertados(itens);
 
-            if (livroEnvolvido) {
+            // se o livro desejado foi transferido, cancela a oferta; se um oferecido saiu, remove so esse item.
+            if (livroDesejadoTransferido) {
                 outraOferta.setStatus(CANCELADA);
+                outraOferta.setMotivoEncerramento(
+                        "O livro desejado foi transferido e não está mais disponível para esta negociação.");
                 outraOferta.setDataAtualizacao(LocalDateTime.now());
                 finalizarItens(itens, CANCELADA);
                 ofertaRepository.save(outraOferta);
                 livroOfertadoRepository.saveAll(itens);
+                continue;
+            }
+
+            boolean itemRemovido = false;
+            for (LivroOfertado item : itens) {
+                if (PENDENTE.equals(item.getStatus())
+                        && idsTransferidos.contains(item.getLivro().getId())) {
+                    item.setStatus(ITEM_REMOVIDO_TRANSFERENCIA);
+                    itemRemovido = true;
+                }
+            }
+            if (itemRemovido) {
+                // so encerra a oferta quando nao restar nenhum livro oferecido pendente.
+                boolean aindaTemOferta = itens.stream().anyMatch(item -> PENDENTE.equals(item.getStatus()));
+                if (!aindaTemOferta) {
+                    outraOferta.setStatus(CANCELADA);
+                    outraOferta.setMotivoEncerramento(
+                            "Todos os livros oferecidos foram transferidos e a oferta não pode mais ser concluída.");
+                }
+                outraOferta.setDataAtualizacao(LocalDateTime.now());
+                ofertaRepository.save(outraOferta);
+                livroOfertadoRepository.saveAll(itens);
             }
         }
+    }
+
+    private String validarMotivo(String motivo) {
+        if (motivo == null || motivo.isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Informe o motivo do cancelamento ou da recusa.");
+        }
+        return motivo.trim();
     }
 
     private void finalizarItens(List<LivroOfertado> itens, String status) {
