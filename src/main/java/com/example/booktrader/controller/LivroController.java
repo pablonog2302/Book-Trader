@@ -41,7 +41,7 @@ public class LivroController {
     public List<Livro> ConsultaLivrosPorTitulo(@PathVariable String titulo) {
         return livroRepository.getLivrosByTituloContainingIgnoreCase(titulo).orElse(null);
     }
-
+  
     @GetMapping("/{id}")
     public ResponseEntity<Livro> ConsultaLivroPorId(@PathVariable Long id) {
 
