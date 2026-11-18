@@ -1,5 +1,6 @@
 package com.example.booktrader.controller;
 
+import com.example.booktrader.DTO.AtualizaMotivoRequest;
 import com.example.booktrader.DTO.OfertaDeTrocaConsultaResponse;
 import com.example.booktrader.DTO.OfertaDeTrocaRequest;
 import com.example.booktrader.service.OfertaDeTrocaService;
@@ -50,8 +51,23 @@ public class OfertaDeTrocaController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancelarOferta(
             @PathVariable Long id,
+            @RequestBody AtualizaMotivoRequest dados,
             HttpServletRequest request) {
-        ofertaService.cancelarOferta(id, (String) request.getAttribute("usuarioCpf"));
+        ofertaService.cancelarOferta(
+                id,
+                dados == null ? null : dados.getMotivo(),
+                (String) request.getAttribute("usuarioCpf"));
         return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{id}/livros/{livroId}")
+    public ResponseEntity<OfertaDeTrocaConsultaResponse> removerLivroOfertado(
+            @PathVariable Long id,
+            @PathVariable Long livroId,
+            HttpServletRequest request) {
+        return ResponseEntity.ok(ofertaService.removerLivroOfertado(
+                id,
+                livroId,
+                (String) request.getAttribute("usuarioCpf")));
     }
 }

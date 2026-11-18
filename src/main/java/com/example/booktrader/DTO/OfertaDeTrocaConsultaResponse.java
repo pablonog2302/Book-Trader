@@ -16,6 +16,7 @@ public class OfertaDeTrocaConsultaResponse {
     private String proprietarioNome;
     private Long livroDesejadoId;
     private String livroDesejadoTitulo;
+    private String motivoEncerramento;
     private List<LivroOfertadoResponse> livrosOferecidos;
 
     public OfertaDeTrocaConsultaResponse(OfertaDeTroca oferta) {
@@ -28,6 +29,7 @@ public class OfertaDeTrocaConsultaResponse {
         proprietarioNome = oferta.getUsuarioDestinatario().getNome();
         livroDesejadoId = oferta.getLivroDesejado().getId();
         livroDesejadoTitulo = oferta.getLivroDesejado().getTitulo();
+        motivoEncerramento = oferta.getMotivoEncerramento();
         livrosOferecidos = oferta.getLivrosOfertados().stream()
                 .map(LivroOfertadoResponse::new)
                 .toList();
@@ -67,6 +69,10 @@ public class OfertaDeTrocaConsultaResponse {
 
     public String getLivroDesejadoTitulo() {
         return livroDesejadoTitulo;
+    }
+
+    public String getMotivoEncerramento() {
+        return motivoEncerramento;
     }
 
     public List<LivroOfertadoResponse> getLivrosOferecidos() {

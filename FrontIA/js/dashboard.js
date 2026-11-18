@@ -1,12 +1,31 @@
+
 const sections = {
     home: {
         title: 'Início',
         content: `
-            <div class="panel">
-                <h2>Bem-vindo ao BookTrader!</h2>
-                <p>
-                    Encontre livros, publique ofertas e acompanhe suas solicitações de troca.
-                </p>
+            <div class="panel home-panel">
+                <p class="eyebrow">Bem-vindo ao BookTrader</p>
+                <h2>Uma nova história pode começar com uma troca.</h2>
+                <p>Encontre livros que despertam sua curiosidade e ofereça novas leituras para a comunidade.</p>
+                <div class="home-actions">
+                    <button type="button" onclick="renderSection('livros')">Explorar livros</button>
+                    <button type="button" class="button-secondary" onclick="renderSection('ofertas')">Acompanhar minhas ofertas</button>
+                </div>
+            </div>
+            <div class="panel home-step">
+                <span class="step-number">01</span>
+                <h3>Descubra</h3>
+                <p>Explore o catálogo e encontre seu próximo livro.</p>
+            </div>
+            <div class="panel home-step">
+                <span class="step-number">02</span>
+                <h3>Proponha</h3>
+                <p>Escolha um livro seu para oferecer em troca.</p>
+            </div>
+            <div class="panel home-step">
+                <span class="step-number">03</span>
+                <h3>Acompanhe</h3>
+                <p>Veja suas ofertas e responda às solicitações recebidas.</p>
             </div>
         `,
     },
@@ -47,23 +66,20 @@ const navItems = document.querySelectorAll('.nav-item');
 let livrosCadastrados = [];
 let ofertasEnviadas = [];
 let solicitacoesRecebidas = [];
+let filtroLivroSolicitacao = null;
 let modoListaLivros = 'todos';
 let filtrosLivros = {
     titulo: '',
     autor: '',
     genero: '',
 };
-let mensagemLista = '';
-let tipoMensagemLista = 'success';
-
-
 if (!localStorage.getItem('token')) {
     sessionStorage.removeItem('isLoggedIn');
     window.location.href = 'index.html';
 }
 
 
-function renderSection(sectionKey) {
+function renderSection(sectionKey, livroId = null) {
     const section = sections[sectionKey] || sections.home;
     pageTitle.textContent = section.title;
     pageContent.innerHTML = section.content;
@@ -78,12 +94,32 @@ function renderSection(sectionKey) {
     } else if (sectionKey === 'ofertas') {
         carregarOfertas();
     } else if (sectionKey === 'solicitacoes') {
-        carregarSolicitacoes();
+        filtroLivroSolicitacao = livroId === null ? null : Number(livroId);
+        carregarSolicitacoes(filtroLivroSolicitacao);
+    }
+}
+
+async function carregarUsuarioLogado() {
+    const nomeElemento = document.getElementById('usuarioLogadoNome');
+    const nomeSalvo = getUsuarioNome();
+    if (nomeSalvo) {
+        nomeElemento.textContent = nomeSalvo;
+        return;
+    }
+
+    try {
+        const usuario = await getUsuarioAtual();
+        nomeElemento.textContent = usuario.nome;
+        setUsuarioNome(usuario.nome);
+        setUsuarioId(usuario.id);
+    } catch (erro) {
+        nomeElemento.textContent = 'Usuário indisponível';
+        await mostrarErro(mensagemUsuarioDeErro(erro));
     }
 }
 
 
-async function carregarLivros(mensagem = '', tipoMensagem = 'success') {
+async function carregarLivros() {
     pageContent.innerHTML = `
         <div class="panel">
             <h2>Livros cadastrados</h2>
@@ -93,15 +129,13 @@ async function carregarLivros(mensagem = '', tipoMensagem = 'success') {
 
     try {
         livrosCadastrados = await getLivros();
-        mensagemLista = mensagem;
-        tipoMensagemLista = tipoMensagem;
         mostrarListaAtual();
     } catch (erro) {
-        console.error('Erro ao carregar livros:', erro);
+        await mostrarErro(mensagemUsuarioDeErro(erro));
         pageContent.innerHTML = `
             <div class="panel">
                 <h2>Erro</h2>
-                <p>Não foi possível carregar os livros. ${escaparHtml(erro.message)}</p>
+                <p>Não foi possível carregar os livros.</p>
                 <button onclick="carregarLivros()">Tentar novamente</button>
             </div>
         `;
@@ -139,7 +173,6 @@ function aplicarFiltros() {
     filtrosLivros.titulo = document.getElementById('filtroTitulo').value.trim();
     filtrosLivros.autor = document.getElementById('filtroAutor').value.trim();
     filtrosLivros.genero = document.getElementById('filtroGenero').value.trim();
-    mensagemLista = '';
     mostrarListaAtual();
 }
 
@@ -163,7 +196,7 @@ function mostrarFormularioCadastro() {
             <h2>Cadastrar livro</h2>
             <p id="mensagemFormulario" class="message" role="status" aria-live="polite"></p>
 
-            <form id="formCadastroLivro">
+            <form id="formCadastroLivro" class="book-form">
                 <label for="titulo">Título:</label>
                 <input type="text" id="titulo" required>
 
@@ -174,7 +207,8 @@ function mostrarFormularioCadastro() {
                 <input type="text" id="genero">
 
                 <label for="descricao">Descrição:</label>
-                <textarea id="descricao"></textarea>
+                <textarea id="descricao" maxlength="255"></textarea>
+                <p id="contadorDescricao">0/255 caracteres</p>
 
                 <label for="isbn">ISBN:</label>
                 <input type="text" id="isbn">
@@ -187,6 +221,8 @@ function mostrarFormularioCadastro() {
             </form>
         </div>
     `;
+
+    ligarContadorDescricao();
 
     const formCadastroLivro = document.getElementById('formCadastroLivro');
 
@@ -205,9 +241,10 @@ function mostrarFormularioCadastro() {
 
         try {
             await cadastrarLivro(dadosLivro);
-            await carregarLivros('Livro cadastrado com sucesso!');
+            await mostrarSucesso('Livro cadastrado com sucesso.');
+            await carregarLivros();
         } catch (erro) {
-            mostrarErroFormulario(erro);
+            await mostrarErroFormulario(erro);
         }
     });
 }
@@ -223,31 +260,45 @@ async function mostrarDetalhesLivro(id) {
 
     try {
         const livro = await getLivroPorId(id);
+        // as acoes variam pela propriedade: o dono gerencia o livro e ve solicitacoes; outros usuarios podem ofertar.
         const ehMeuLivro = livro.usuario
             && String(livro.usuario.id) === String(getUsuarioId());
 
         pageContent.innerHTML = `
-            <div class="panel">
+            <div class="panel book-detail">
                 <h2>${escaparHtml(livro.titulo || 'Título não informado')}</h2>
-                ${livro.fotoCapa ? `<img src="${escaparHtml(livro.fotoCapa)}" alt="Capa do livro" width="120">` : ''}
-                <p><strong>Autor:</strong> ${escaparHtml(livro.autor || 'Não informado')}</p>
-                <p><strong>Gênero:</strong> ${escaparHtml(livro.genero || 'Não informado')}</p>
-                <p><strong>ISBN:</strong> ${escaparHtml(livro.isbn || 'Não informado')}</p>
-                <p><strong>Data de publicação:</strong> ${escaparHtml(livro.dataPublicada || 'Não informada')}</p>
-                <p><strong>Descrição:</strong> ${escaparHtml(livro.descricao || 'Sem descrição')}</p>
-                ${ehMeuLivro ? `
-                    <button onclick="mostrarFormularioEdicao(${Number(livro.id)})">Editar</button>
-                    <button onclick="confirmarExclusaoLivro(${Number(livro.id)})">Excluir</button>
-                ` : ''}
-                <button onclick="mostrarListaAtual()">Voltar para os livros</button>
+                <div class="book-detail-layout">
+                    <div class="detail-cover-frame">
+                        ${livro.fotoCapa
+            ? `<img class="detail-cover" src="${escaparHtml(livro.fotoCapa)}" alt="Capa de ${escaparHtml(livro.titulo || 'livro')}">`
+            : '<div class="cover-placeholder">Sem capa</div>'}
+                    </div>
+                    <div class="book-detail-info">
+                        <p><strong>Autor:</strong> ${escaparHtml(livro.autor || 'Não informado')}</p>
+                        <p><strong>Gênero:</strong> ${escaparHtml(livro.genero || 'Não informado')}</p>
+                        <p><strong>ISBN:</strong> ${escaparHtml(livro.isbn || 'Não informado')}</p>
+                        <p><strong>Data de cadastro:</strong> ${livro.dataCadastro ? new Date(livro.dataCadastro).toLocaleDateString('pt-BR') : 'Não informada'}</p>
+                        <p><strong>Descrição:</strong> ${escaparHtml(livro.descricao || 'Sem descrição')}</p>
+                    </div>
+                </div>
+                <div class="book-detail-actions">
+                    ${ehMeuLivro
+            ? `<button onclick="renderSection('solicitacoes', ${Number(livro.id)})">Ver solicitações deste livro</button>`
+            : `<button onclick="mostrarFormularioOferta(${Number(livro.id)})">Fazer oferta por este livro</button>`}
+                    ${ehMeuLivro ? `
+                        <button class="button-secondary" onclick="mostrarFormularioEdicao(${Number(livro.id)})">Editar</button>
+                        <button class="button-danger" onclick="confirmarExclusaoLivro(${Number(livro.id)})">Excluir</button>
+                    ` : ''}
+                    <button class="button-secondary" onclick="mostrarListaAtual()">Voltar para os livros</button>
+                </div>
             </div>
         `;
     } catch (erro) {
-        console.error('Erro ao carregar detalhes do livro:', erro);
+        await mostrarErro(mensagemUsuarioDeErro(erro));
         pageContent.innerHTML = `
             <div class="panel">
                 <h2>Erro</h2>
-                <p>Não foi possível carregar os detalhes. ${escaparHtml(erro.message)}</p>
+                <p>Não foi possível carregar os detalhes.</p>
                 <button onclick="mostrarListaAtual()">Voltar para os livros</button>
             </div>
         `;
@@ -262,7 +313,7 @@ async function mostrarFormularioEdicao(id) {
             && String(livro.usuario.id) === String(getUsuarioId());
 
         if (!ehMeuLivro) {
-            alert('Você só pode editar os seus próprios livros.');
+            await mostrarErro('Você só pode editar os seus próprios livros.');
             mostrarListaAtual();
             return;
         }
@@ -271,7 +322,7 @@ async function mostrarFormularioEdicao(id) {
             <div class="panel">
                 <h2>Editar livro</h2>
                 <p id="mensagemFormulario" class="message" role="status" aria-live="polite"></p>
-                <form id="formEdicaoLivro">
+                <form id="formEdicaoLivro" class="book-form">
                     <label for="titulo">Título:</label>
                     <input type="text" id="titulo" value="${escaparHtml(livro.titulo)}" required>
 
@@ -282,7 +333,8 @@ async function mostrarFormularioEdicao(id) {
                     <input type="text" id="genero" value="${escaparHtml(livro.genero)}">
 
                     <label for="descricao">Descrição:</label>
-                    <textarea id="descricao">${escaparHtml(livro.descricao)}</textarea>
+                    <textarea id="descricao" maxlength="255">${escaparHtml(livro.descricao)}</textarea>
+                    <p id="contadorDescricao">${(livro.descricao || '').length}/255 caracteres</p>
 
                     <label for="isbn">ISBN:</label>
                     <input type="text" id="isbn" value="${escaparHtml(livro.isbn)}">
@@ -295,6 +347,8 @@ async function mostrarFormularioEdicao(id) {
                 </form>
             </div>
         `;
+
+        ligarContadorDescricao();
 
         document.getElementById('formEdicaoLivro').addEventListener('submit', async function(event) {
             event.preventDefault();
@@ -310,17 +364,18 @@ async function mostrarFormularioEdicao(id) {
 
             try {
                 await atualizarLivro(id, dadosLivro);
-                await carregarLivros('Livro atualizado com sucesso!');
+                await mostrarSucesso('Livro atualizado com sucesso.');
+                await carregarLivros();
             } catch (erro) {
-                mostrarErroFormulario(erro);
+                await mostrarErroFormulario(erro);
             }
         });
     } catch (erro) {
-        console.error('Erro ao preparar a edição do livro:', erro);
+        await mostrarErro(mensagemUsuarioDeErro(erro));
         pageContent.innerHTML = `
             <div class="panel">
                 <h2>Erro</h2>
-                <p>Não foi possível abrir o formulário. ${escaparHtml(erro.message)}</p>
+                <p>Não foi possível abrir o formulário.</p>
                 <button onclick="mostrarListaAtual()">Voltar para os livros</button>
             </div>
         `;
@@ -329,57 +384,73 @@ async function mostrarFormularioEdicao(id) {
 
 
 async function confirmarExclusaoLivro(id) {
-    if (!window.confirm('Tem certeza de que deseja excluir este livro?')) {
+    if (!await confirmarAcao('Tem certeza de que deseja excluir este livro?', 'Excluir livro', 'Excluir')) {
         return;
     }
 
     try {
         await excluirLivro(id);
-        await carregarLivros('Livro excluído com sucesso!');
+        await mostrarSucesso('Livro excluído com sucesso.');
+        await carregarLivros();
     } catch (erro) {
-        console.error('Erro ao excluir livro:', erro);
-        alert(`Não foi possível excluir o livro: ${erro.message}`);
+        await mostrarErro(mensagemUsuarioDeErro(erro));
     }
 }
 
 
 function mostrarErroFormulario(erro) {
-    const mensagem = document.getElementById('mensagemFormulario');
-    mensagem.textContent = `Não foi possível salvar o livro: ${erro.message}`;
-    mensagem.className = 'message error';
+    return mostrarErro(mensagemUsuarioDeErro(erro));
+}
+
+
+function ligarContadorDescricao() {
+    const descricao = document.getElementById('descricao');
+    const contador = document.getElementById('contadorDescricao');
+
+    contador.textContent = descricao.value.length + '/255 caracteres';
+
+    descricao.addEventListener('input', function() {
+        contador.textContent = descricao.value.length + '/255 caracteres';
+    });
 }
 
 
 function exibirLivros(listaLivros) {
     const livrosFiltrados = filtrarLista(listaLivros);
     let conteudoLivros = `
-        <div class="panel">
+        <div class="panel library-toolbar">
             <h2>Livros</h2>
 
-            <button onclick="mostrarTodosLivros()">Todos os livros</button>
-            <button onclick="mostrarMeusLivros()">Meus livros</button>
-            <button onclick="mostrarFormularioCadastro()">Cadastrar livro</button>
+            <div class="library-actions">
+                <button class="${modoListaLivros === 'todos' ? 'is-selected' : 'button-secondary'}" onclick="mostrarTodosLivros()">Todos os livros</button>
+                <button class="${modoListaLivros === 'meus' ? 'is-selected' : 'button-secondary'}" onclick="mostrarMeusLivros()">Meus livros</button>
+                <button class="button-create" onclick="mostrarFormularioCadastro()">Cadastrar livro</button>
+            </div>
 
             <form id="formFiltrosLivros">
-                <label for="filtroTitulo">Filtrar por título:</label>
-                <input type="text" id="filtroTitulo" value="${escaparHtml(filtrosLivros.titulo)}">
-
-                <label for="filtroAutor">Filtrar por autor:</label>
-                <input type="text" id="filtroAutor" value="${escaparHtml(filtrosLivros.autor)}">
-
-                <label for="filtroGenero">Filtrar por gênero:</label>
-                <input type="text" id="filtroGenero" value="${escaparHtml(filtrosLivros.genero)}">
-
-                <button type="submit">Filtrar</button>
-                <button type="button" onclick="limparFiltrosLivros()">Limpar filtros</button>
+                <div class="filter-field">
+                    <label for="filtroTitulo">Filtrar por título:</label>
+                    <input type="text" id="filtroTitulo" value="${escaparHtml(filtrosLivros.titulo)}">
+                </div>
+                <div class="filter-field">
+                    <label for="filtroAutor">Filtrar por autor:</label>
+                    <input type="text" id="filtroAutor" value="${escaparHtml(filtrosLivros.autor)}">
+                </div>
+                <div class="filter-field">
+                    <label for="filtroGenero">Filtrar por gênero:</label>
+                    <input type="text" id="filtroGenero" value="${escaparHtml(filtrosLivros.genero)}">
+                </div>
+                <div class="filter-actions">
+                    <button type="submit">Filtrar</button>
+                    <button type="button" class="button-secondary" onclick="limparFiltrosLivros()">Limpar filtros</button>
+                </div>
             </form>
-            ${mensagemLista ? `<p class="message ${tipoMensagemLista}">${escaparHtml(mensagemLista)}</p>` : ''}
         </div>
     `;
 
     if (livrosFiltrados.length === 0) {
         conteudoLivros += `
-            <div class="panel">
+            <div class="panel empty-state">
                 <p>Nenhum livro encontrado.</p>
             </div>
         `;
@@ -390,16 +461,19 @@ function exibirLivros(listaLivros) {
 
     livrosFiltrados.forEach((livro) => {
         conteudoLivros += `
-            <div class="panel">
-                <h3>${escaparHtml(livro.titulo || 'Título não informado')}</h3>
-                ${livro.fotoCapa ? `
-                    <img src="${escaparHtml(livro.fotoCapa)}" alt="Capa do livro" width="120">
-                ` : ''}
-                <p><strong>Autor:</strong> ${escaparHtml(livro.autor || 'Não informado')}</p>
-                <p><strong>Gênero:</strong> ${escaparHtml(livro.genero || 'Não informado')}</p>
-                <p><strong>ISBN:</strong> ${escaparHtml(livro.isbn || 'Não informado')}</p>
-                <p><strong>Descrição:</strong> ${escaparHtml(livro.descricao || 'Sem descrição')}</p>
-                <button onclick="mostrarDetalhesLivro(${Number(livro.id)})">Ver detalhes</button>
+            <div class="panel book-card">
+                <div class="book-cover">
+                    ${livro.fotoCapa
+            ? `<img src="${escaparHtml(livro.fotoCapa)}" alt="Capa de ${escaparHtml(livro.titulo || 'livro')}">`
+            : '<div class="cover-placeholder" aria-label="Capa não informada">Sem capa</div>'}
+                </div>
+                <div class="book-info">
+                    <p class="eyebrow">${escaparHtml(livro.genero || 'Livro disponível')}</p>
+                    <h3>${escaparHtml(livro.titulo || 'Título não informado')}</h3>
+                    <p><strong>Autor:</strong> ${escaparHtml(livro.autor || 'Não informado')}</p>
+                    <p><strong>Descrição:</strong> ${escaparHtml(livro.descricao || 'Sem descrição')}</p>
+                    <button onclick="mostrarDetalhesLivro(${Number(livro.id)})">Ver detalhes</button>
+                </div>
             </div>
         `;
     });
@@ -424,22 +498,21 @@ function limparFiltrosLivros() {
         autor: '',
         genero: '',
     };
-    mensagemLista = '';
     mostrarListaAtual();
 }
 
 
-async function carregarOfertas(mensagem = '') {
+async function carregarOfertas() {
     pageContent.innerHTML = '<div class="panel"><p>Carregando ofertas...</p></div>';
 
     try {
         ofertasEnviadas = await getOfertasEnviadas();
-        exibirOfertas(mensagem);
+        exibirOfertas();
     } catch (erro) {
-        console.error('Erro ao carregar ofertas:', erro);
+        await mostrarErro(mensagemUsuarioDeErro(erro));
         pageContent.innerHTML = `
             <div class="panel">
-                <p>Não foi possível carregar as ofertas. ${escaparHtml(erro.message)}</p>
+                <p>Não foi possível carregar as ofertas.</p>
                 <button onclick="carregarOfertas()">Tentar novamente</button>
             </div>
         `;
@@ -447,30 +520,35 @@ async function carregarOfertas(mensagem = '') {
 }
 
 
-function exibirOfertas(mensagem = '') {
+function exibirOfertas() {
     let conteudo = `
         <div class="panel">
             <h2>Ofertas enviadas</h2>
             <p>As ofertas são propostas de troca de livros, sem compra ou pagamento.</p>
-            ${mensagem ? `<p class="message success">${escaparHtml(mensagem)}</p>` : ''}
             <button onclick="mostrarFormularioOferta()">Criar oferta</button>
         </div>
     `;
 
     if (ofertasEnviadas.length === 0) {
-        conteudo += '<div class="panel"><p>Você ainda não enviou ofertas.</p></div>';
+        conteudo += '<div class="panel empty-state"><p>Você ainda não enviou ofertas.</p></div>';
     }
 
     ofertasEnviadas.forEach((oferta) => {
         conteudo += `
-            <div class="panel">
-                <h3>Oferta ${Number(oferta.id)} — ${escaparHtml(oferta.status)}</h3>
+            <div class="panel trade-card offer-card">
+                <h3>Oferta ${Number(oferta.id)} <span class="status status-${escaparHtml(String(oferta.status || '').toLowerCase())}">${escaparHtml(oferta.status)}</span></h3>
                 <p><strong>Livro desejado:</strong> ${escaparHtml(oferta.livroDesejadoTitulo)}</p>
                 <p><strong>Proprietário:</strong> ${escaparHtml(oferta.proprietarioNome)}</p>
+                ${oferta.motivoEncerramento ? `<p><strong>Motivo:</strong> ${escaparHtml(oferta.motivoEncerramento)}</p>` : ''}
                 <p><strong>Livros oferecidos:</strong></p>
                 <ul>
                     ${oferta.livrosOferecidos.map((livro) => `
-                        <li>${escaparHtml(livro.titulo)} — ${escaparHtml(livro.status)}</li>
+                        <li>
+                            ${escaparHtml(livro.titulo)} — ${escaparHtml(livro.status)}
+                            ${oferta.status === 'PENDENTE' && livro.status === 'PENDENTE'
+            ? `<button onclick="removerLivroDaOferta(${Number(oferta.id)}, ${Number(livro.id)})">Remover</button>`
+            : ''}
+                        </li>
                     `).join('')}
                 </ul>
                 ${oferta.status === 'PENDENTE' ? `
@@ -484,11 +562,12 @@ function exibirOfertas(mensagem = '') {
 }
 
 
-async function mostrarFormularioOferta() {
+async function mostrarFormularioOferta(livroDesejadoId = null) {
     pageContent.innerHTML = '<div class="panel"><p>Carregando livros...</p></div>';
 
     try {
         livrosCadastrados = await getLivros();
+        // separa os livros proprios dos livros de terceiros e usa o id recebido para pre-selecionar o desejado.
         const usuarioId = getUsuarioId();
         const meusLivros = livrosCadastrados.filter((livro) => {
             return livro.usuario && String(livro.usuario.id) === String(usuarioId);
@@ -500,13 +579,12 @@ async function mostrarFormularioOferta() {
         pageContent.innerHTML = `
             <div class="panel">
                 <h2>Criar oferta de troca</h2>
-                <p id="mensagemOferta" class="message" role="status" aria-live="polite"></p>
                 <form id="formOferta">
                     <label for="livroDesejado">Livro que deseja receber:</label>
                     <select id="livroDesejado" required>
                         <option value="">Selecione um livro</option>
                         ${livrosDeOutros.map((livro) => `
-                            <option value="${Number(livro.id)}">
+                            <option value="${Number(livro.id)}" ${Number(livro.id) === Number(livroDesejadoId) ? 'selected' : ''}>
                                 ${escaparHtml(livro.titulo)} — ${escaparHtml(livro.usuario.nome || 'Usuário')}
                             </option>
                         `).join('')}
@@ -531,11 +609,12 @@ async function mostrarFormularioOferta() {
 
         document.getElementById('formOferta').addEventListener('change', atualizarResumoOferta);
         document.getElementById('formOferta').addEventListener('submit', enviarOferta);
+        atualizarResumoOferta();
     } catch (erro) {
-        console.error('Erro ao preparar a oferta:', erro);
+        await mostrarErro(mensagemUsuarioDeErro(erro));
         pageContent.innerHTML = `
             <div class="panel">
-                <p>Não foi possível carregar os livros. ${escaparHtml(erro.message)}</p>
+                <p>Não foi possível carregar os livros.</p>
                 <button onclick="carregarOfertas()">Voltar</button>
             </div>
         `;
@@ -568,49 +647,66 @@ async function enviarOferta(event) {
     });
 
     if (!livroDesejadoId || livrosOferecidosIds.length === 0) {
-        mostrarMensagemOferta('Selecione o livro desejado e pelo menos um livro para oferecer.', 'error');
+        await mostrarErro('Selecione o livro desejado e pelo menos um livro para oferecer.');
         return;
     }
 
     const tituloDesejado = document.getElementById('livroDesejado').selectedOptions[0].textContent.trim();
-    if (!window.confirm(`Enviar oferta para ${tituloDesejado} com ${livrosOferecidosIds.length} livro(s)?`)) {
+    if (!await confirmarAcao(`Enviar oferta para ${tituloDesejado} com ${livrosOferecidosIds.length} livro(s)?`, 'Confirmar oferta', 'Enviar oferta')) {
         return;
     }
 
     try {
         await criarOferta({ livroDesejadoId, livrosOferecidosIds });
-        await carregarOfertas('Oferta enviada com sucesso.');
+        await mostrarSucesso('Oferta enviada com sucesso.');
+        await carregarOfertas();
     } catch (erro) {
-        mostrarMensagemOferta(`Não foi possível enviar a oferta: ${erro.message}`, 'error');
+        await mostrarErro(mensagemUsuarioDeErro(erro));
     }
 }
 
 
 async function cancelarOfertaEnviada(id) {
-    if (!window.confirm('Tem certeza de que deseja cancelar esta oferta?')) {
+    const motivo = await solicitarMotivo('Informe por que deseja cancelar esta oferta.', 'Cancelar oferta');
+    if (motivo === null) {
         return;
     }
 
     try {
-        await cancelarOferta(id);
-        await carregarOfertas('Oferta cancelada.');
+        await cancelarOferta(id, motivo);
+        await mostrarSucesso('Oferta cancelada.');
+        await carregarOfertas();
     } catch (erro) {
-        alert(`Não foi possível cancelar a oferta: ${erro.message}`);
+        await mostrarErro(mensagemUsuarioDeErro(erro));
+    }
+}
+
+async function removerLivroDaOferta(ofertaId, livroId) {
+    if (!await confirmarAcao('Deseja remover este livro da oferta pendente?', 'Remover livro', 'Remover')) {
+        return;
+    }
+    try {
+        await removerLivroOferta(ofertaId, livroId);
+        await mostrarSucesso('Livro removido da oferta.');
+        await carregarOfertas();
+    } catch (erro) {
+        await mostrarErro(mensagemUsuarioDeErro(erro));
     }
 }
 
 
-async function carregarSolicitacoes(mensagem = '') {
+async function carregarSolicitacoes(livroId = filtroLivroSolicitacao) {
     pageContent.innerHTML = '<div class="panel"><p>Carregando solicitações...</p></div>';
 
     try {
         solicitacoesRecebidas = await getSolicitacoesRecebidas();
-        exibirSolicitacoes(mensagem);
+        filtroLivroSolicitacao = livroId;
+        exibirSolicitacoes();
     } catch (erro) {
-        console.error('Erro ao carregar solicitações:', erro);
+        await mostrarErro(mensagemUsuarioDeErro(erro));
         pageContent.innerHTML = `
             <div class="panel">
-                <p>Não foi possível carregar as solicitações. ${escaparHtml(erro.message)}</p>
+                <p>Não foi possível carregar as solicitações.</p>
                 <button onclick="carregarSolicitacoes()">Tentar novamente</button>
             </div>
         `;
@@ -618,30 +714,40 @@ async function carregarSolicitacoes(mensagem = '') {
 }
 
 
-function exibirSolicitacoes(mensagem = '') {
+function exibirSolicitacoes() {
+    const listaSolicitacoes = filtroLivroSolicitacao === null
+        ? solicitacoesRecebidas
+        : solicitacoesRecebidas.filter((oferta) => {
+            return Number(oferta.livroDesejadoId) === Number(filtroLivroSolicitacao);
+        });
     let conteudo = `
         <div class="panel">
             <h2>Solicitações recebidas</h2>
-            ${mensagem ? `<p class="message success">${escaparHtml(mensagem)}</p>` : ''}
+            ${filtroLivroSolicitacao !== null
+        ? `<p>Filtradas pelo livro selecionado.</p><button class="button-secondary" onclick="renderSection('solicitacoes')">Ver todas as solicitações</button>`
+        : ''}
         </div>
     `;
 
-    if (solicitacoesRecebidas.length === 0) {
-        conteudo += '<div class="panel"><p>Você não possui solicitações recebidas.</p></div>';
+    if (listaSolicitacoes.length === 0) {
+        conteudo += `<div class="panel empty-state"><p>${filtroLivroSolicitacao === null
+            ? 'Você não possui solicitações recebidas.'
+            : 'Não há solicitações relacionadas a este livro.'}</p></div>`;
     }
 
-    solicitacoesRecebidas.forEach((oferta) => {
+    listaSolicitacoes.forEach((oferta) => {
         const pendente = oferta.status === 'PENDENTE';
         conteudo += `
-            <div class="panel">
-                <h3>Solicitação ${Number(oferta.id)} — ${escaparHtml(oferta.status)}</h3>
+            <div class="panel trade-card request-card">
+                <h3>Solicitação ${Number(oferta.id)} <span class="status status-${escaparHtml(String(oferta.status || '').toLowerCase())}">${escaparHtml(oferta.status)}</span></h3>
                 <p><strong>Enviada por:</strong> ${escaparHtml(oferta.solicitanteNome)}</p>
                 <p><strong>Livro desejado:</strong> ${escaparHtml(oferta.livroDesejadoTitulo)}</p>
+                ${oferta.motivoEncerramento ? `<p><strong>Motivo:</strong> ${escaparHtml(oferta.motivoEncerramento)}</p>` : ''}
                 <p><strong>Livros oferecidos:</strong></p>
                 <ul>
                     ${oferta.livrosOferecidos.map((livro) => `
                         <li>
-                            ${pendente ? `
+                            ${pendente && livro.status === 'PENDENTE' ? `
                                 <label>
                                     <input type="checkbox" name="livroAceito-${Number(oferta.id)}" value="${Number(livro.id)}">
                                     ${escaparHtml(livro.titulo)} — ${escaparHtml(livro.autor)}
@@ -667,38 +773,42 @@ function exibirSolicitacoes(mensagem = '') {
 
 
 async function decidirSolicitacaoRecebida(id, status) {
+    // o aceite envia os itens escolhidos; a recusa coleta o motivo que sera mantido no historico.
     const livrosAceitosIds = [];
     if (status === 'ACEITA') {
         document.querySelectorAll(`input[name="livroAceito-${id}"]:checked`).forEach((item) => {
             livrosAceitosIds.push(Number(item.value));
         });
         if (livrosAceitosIds.length === 0) {
-            alert('Selecione pelo menos um livro ou escolha recusar todos.');
+            await mostrarErro('Selecione pelo menos um livro ou escolha recusar todos.');
+            return;
+        }
+    }
+
+    let motivo = null;
+    if (status === 'RECUSADA') {
+        motivo = await solicitarMotivo('Informe o motivo da recusa desta solicitação.', 'Recusar solicitação');
+        if (motivo === null) {
             return;
         }
     }
 
     const acao = status === 'ACEITA' ? 'aceitar os livros selecionados' : 'recusar toda a proposta';
-    if (!window.confirm(`Deseja ${acao}?`)) {
+    if (!await confirmarAcao(`Deseja ${acao}?`, 'Confirmar decisão')) {
         return;
     }
 
     try {
-        await decidirSolicitacao(id, { status, livrosAceitosIds });
-        await carregarSolicitacoes('A solicitação foi atualizada com sucesso.');
+        await decidirSolicitacao(id, { status, livrosAceitosIds, motivo: motivo ? motivo.trim() : null });
+        await mostrarSucesso('A solicitação foi atualizada com sucesso.');
+        await carregarSolicitacoes();
     } catch (erro) {
-        alert(`Não foi possível atualizar a solicitação: ${erro.message}`);
+        await mostrarErro(mensagemUsuarioDeErro(erro));
     }
 }
 
 
-function mostrarMensagemOferta(mensagem, tipo) {
-    const elemento = document.getElementById('mensagemOferta');
-    elemento.textContent = mensagem;
-    elemento.className = `message ${tipo}`;
-}
-
-
+// escapa texto antes de inseri-lo no html da tela, para que dados nao sejam interpretados como marcacao.
 function escaparHtml(valor) {
     if (valor === null || valor === undefined) {
         return '';
@@ -721,8 +831,10 @@ function logoutUsuario() {
     sessionStorage.removeItem('isLoggedIn');
     localStorage.removeItem('token');
     localStorage.removeItem('usuarioId');
+    localStorage.removeItem('usuarioNome');
     window.location.href = 'index.html';
 }
 
 
 renderSection('home');
+carregarUsuarioLogado();

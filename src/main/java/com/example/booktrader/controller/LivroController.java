@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -41,14 +42,14 @@ public class LivroController {
     public List<Livro> ConsultaLivrosPorTitulo(@PathVariable String titulo) {
         return livroRepository.getLivrosByTituloContainingIgnoreCase(titulo).orElse(null);
     }
-  
+
     @GetMapping("/{id}")
     public ResponseEntity<Livro> ConsultaLivroPorId(@PathVariable Long id) {
 
         var livro = livroRepository.findById(id).orElse(null);
 
         if (livro == null) {
-            return ResponseEntity.notFound().build();
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Livro não encontrado.");
         }
 
         return ResponseEntity.ok(livro);
@@ -59,10 +60,12 @@ public class LivroController {
             @RequestBody LivroRequest livroRequest,
             HttpServletRequest request) {
 
+        // o proprietario e obtido da autenticacao, nao de um id enviado pelo navegador.
         Usuario usuarioBanco = buscarUsuarioAutenticado(request);
         if (usuarioBanco == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new LivroResponse(null, "Usuario nao autenticado."));
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Sua sessão expirou. Faça login novamente.");
         }
 
         Livro livroBanco = new Livro();
@@ -94,13 +97,10 @@ public class LivroController {
         Livro livroBanco = livroRepository.findById(id).orElse(null);
 
         if (livroBanco == null) {
-            return ResponseEntity.notFound().build();
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Livro não encontrado.");
         }
 
-        ResponseEntity<LivroResponse> respostaAcesso = verificarProprietario(livroBanco, request);
-        if (respostaAcesso != null) {
-            return respostaAcesso;
-        }
+        verificarProprietario(livroBanco, request);
 
         livroBanco.setTitulo(livroRequest.getTitulo());
         livroBanco.setDescricao(livroRequest.getDescricao());
@@ -123,19 +123,17 @@ public class LivroController {
         Livro livroBanco = livroRepository.findById(id).orElse(null);
 
         if (livroBanco == null) {
-            return ResponseEntity.notFound().build();
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Livro não encontrado.");
         }
 
-        ResponseEntity<LivroResponse> respostaAcesso = verificarProprietario(livroBanco, request);
-        if (respostaAcesso != null) {
-            return respostaAcesso;
-        }
+        verificarProprietario(livroBanco, request);
 
+        // livros referenciados por ofertas nao podem ser apagados para preservar o historico das negociacoes.
         if (ofertaRepository.existsByLivroDesejadoId(id)
                 || livroOfertadoRepository.existsByLivroId(id)) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(new LivroResponse(null,
-                            "Este livro faz parte do historico de ofertas e nao pode ser excluido."));
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Este livro faz parte do histórico de ofertas e não pode ser excluído.");
         }
 
         livroRepository.delete(livroBanco);
@@ -143,23 +141,24 @@ public class LivroController {
                 new LivroResponse(livroBanco.getId(), "Excluido com sucesso"));
     }
 
-    private ResponseEntity<LivroResponse> verificarProprietario(
+    // o cpf validado pelo jwt identifica quem pode alterar ou excluir o livro.
+    private void verificarProprietario(
             Livro livro,
             HttpServletRequest request) {
 
         Usuario usuarioAutenticado = buscarUsuarioAutenticado(request);
         if (usuarioAutenticado == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new LivroResponse(null, "Usuario nao autenticado."));
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Sua sessão expirou. Faça login novamente.");
         }
 
         if (livro.getUsuario() == null
                 || !usuarioAutenticado.getId().equals(livro.getUsuario().getId())) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(new LivroResponse(null, "Voce nao pode alterar este livro."));
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Você só pode alterar livros cadastrados por você.");
         }
-
-        return null;
     }
 
     private Usuario buscarUsuarioAutenticado(HttpServletRequest request) {

@@ -1,27 +1,32 @@
-
 package com.example.booktrader.DTO;
 
-import java.util.List;
+import com.example.booktrader.entities.OfertaDeTroca;
 
-public class OfertaDeTrocaRequest {
+public class OfertaDeTrocaResponse {
 
-    private Long livroDesejadoId;
-    private List<Long> livrosOferecidosIds;
+    String mensagem;
+    Long id;
 
-    public Long getLivroDesejadoId() {
-        return livroDesejadoId;
+    public OfertaDeTrocaResponse(){}
+
+    public OfertaDeTrocaResponse(Long id, String mensagem) {
+        this.mensagem = mensagem;
+        this.id = id;
     }
 
-    public void setLivroDesejadoId(Long livroDesejadoId) {
-        this.livroDesejadoId = livroDesejadoId;
+    public String getMensagem() {
+        return mensagem;
     }
 
-    public List<Long> getLivrosOferecidosIds() {
-        return livrosOferecidosIds;
+    public void setMensagem(String mensagem) {
+        this.mensagem = mensagem;
     }
 
-    public void setLivrosOferecidosIds(List<Long> livrosOferecidosIds) {
-        this.livrosOferecidosIds = livrosOferecidosIds;
+    public Long getId() {
+        return id;
     }
 
+    public void setId(Long id) {
+        this.id = id;
+    }
 }

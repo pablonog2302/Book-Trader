@@ -9,13 +9,19 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 @Component
 public class JwtFilter extends OncePerRequestFilter {
+
+    private static final Logger logger = LoggerFactory.getLogger(JwtFilter.class);
 
     @Value("${spring.secret}")
     private String secret;
@@ -38,7 +44,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 caminho.startsWith("/webjars") ||
                 caminho.startsWith("/swagger-resources") ||
                 caminho.startsWith("/v3/api-docs")||
-                    request.getMethod().startsWith("OPTIONS")
+                request.getMethod().startsWith("OPTIONS")
         ){
             filterChain.doFilter(request,response);
             return;
@@ -47,8 +53,7 @@ public class JwtFilter extends OncePerRequestFilter {
         String headerToken = request.getHeader("Authorization");
 
         if (headerToken == null || !headerToken.startsWith("Bearer ")) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Token invalido!");
+            responderNaoAutorizado(response);
             return;
         }
 
@@ -59,10 +64,11 @@ public class JwtFilter extends OncePerRequestFilter {
                     .withIssuer(emissor)
                     .build();
             var resultado = verifier.verify(token);
+            // disponibiliza o cpf validado para os controllers identificarem o usuario da requisicao.
             request.setAttribute("usuarioCpf", resultado.getSubject());
         } catch (JWTVerificationException erro) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Token invalido!");
+            logger.warn("Falha na validação do token de acesso.", erro);
+            responderNaoAutorizado(response);
             return;
         }
 
@@ -71,5 +77,13 @@ public class JwtFilter extends OncePerRequestFilter {
 
 
 
+    }
+
+    private void responderNaoAutorizado(HttpServletResponse response) throws IOException {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        response.getWriter().write(
+                "{\"mensagem\":\"Sua sessão expirou ou é inválida. Faça login novamente.\"}");
     }
 }

@@ -1,5 +1,20 @@
 const API_BASE_URL = 'http://localhost:8080';
 
+class ApiRequestError extends Error {
+    constructor(mensagem, status = 0) {
+        super(mensagem);
+        this.name = 'ApiRequestError';
+        this.status = status;
+    }
+}
+
+function mensagemUsuarioDeErro(erro) {
+    if (erro instanceof ApiRequestError) {
+        return erro.message;
+    }
+    return 'Não foi possível concluir a operação. Tente novamente mais tarde.';
+}
+
 function getToken() {
     return localStorage.getItem('token');
 }
@@ -20,12 +35,26 @@ function setUsuarioId(usuarioId) {
     localStorage.setItem('usuarioId', usuarioId);
 }
 
+function setUsuarioNome(nome) {
+    if (!nome) {
+        return;
+    }
+
+    localStorage.setItem('usuarioNome', nome);
+}
+
+function getUsuarioNome() {
+    return localStorage.getItem('usuarioNome');
+}
+
 function getUsuarioId() {
     return localStorage.getItem('usuarioId');
 }
 
 function clearToken() {
     localStorage.removeItem('token');
+    localStorage.removeItem('usuarioId');
+    localStorage.removeItem('usuarioNome');
 }
 
 function getAuthHeaders(headers = {}) {
@@ -56,6 +85,26 @@ function extractTokenFromResponse(data) {
     return null;
 }
 
+function mensagemPadraoHttp(status) {
+    switch (status) {
+        case 400:
+            return 'Revise os dados informados e tente novamente.';
+        case 401:
+            return 'Sua sessão expirou ou os dados de acesso são inválidos. Faça login novamente.';
+        case 403:
+            return 'Você não tem permissão para realizar esta ação.';
+        case 404:
+            return 'O item solicitado não foi encontrado.';
+        case 409:
+            return 'A operação não pode ser concluída porque os dados estão em conflito.';
+        default:
+            return status >= 500
+                ? 'Não foi possível concluir a operação. Tente novamente mais tarde.'
+                : 'Não foi possível concluir a solicitação. Revise os dados e tente novamente.';
+    }
+}
+
+// centraliza autenticacao, leitura das respostas e mensagens; em 401 tambem limpa a sessao.
 async function request({ method = 'GET', endpoint, body = null, headers = {}, requireAuth = true }) {
     const token = getToken();
 
@@ -63,7 +112,7 @@ async function request({ method = 'GET', endpoint, body = null, headers = {}, re
         if (typeof window !== 'undefined') {
             window.location.href = 'index.html';
         }
-        throw new Error('Token de autenticação não encontrado. Faça login novamente.');
+        throw new ApiRequestError('Sua sessão expirou. Faça login novamente.', 401);
     }
 
     const config = {
@@ -81,37 +130,49 @@ async function request({ method = 'GET', endpoint, body = null, headers = {}, re
     try {
         const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
         const contentType = response.headers.get('content-type') || '';
-        const data = contentType.includes('application/json') || contentType.includes('+json')
-            ? await response.json()
-            : await response.text();
+        const responseText = await response.text();
+        let data = responseText;
+        if (contentType.includes('application/json') || contentType.includes('+json')) {
+            try {
+                data = responseText ? JSON.parse(responseText) : null;
+            } catch {
+                data = null;
+            }
+        }
 
         if (response.status === 401) {
             clearToken();
-            if (typeof window !== 'undefined') {
+            if (requireAuth && typeof window !== 'undefined') {
                 window.location.href = 'index.html';
             }
-            throw new Error('Sessão expirada ou não autorizada.');
-        }
-
-        if (response.status === 403) {
-            throw new Error('Você não tem permissão para realizar esta ação.');
+            const mensagem = data && typeof data.mensagem === 'string'
+                ? data.mensagem
+                : mensagemPadraoHttp(response.status);
+            throw new ApiRequestError(mensagem, response.status);
         }
 
         if (!response.ok) {
-            throw new Error(
-                typeof data === 'string'
-                    ? data
-                    : data.mensagem || data.message || data.detail || JSON.stringify(data, null, 2)
-            );
+            const mensagem = response.status < 500
+            && data
+            && typeof data.mensagem === 'string'
+            && data.mensagem.trim()
+                ? data.mensagem
+                : mensagemPadraoHttp(response.status);
+            throw new ApiRequestError(mensagem, response.status);
         }
 
         return data;
     } catch (error) {
-        console.error('Erro na requisição:', error);
-        throw error;
+        if (error instanceof ApiRequestError) {
+            throw error;
+        }
+        throw new ApiRequestError(
+            'Não foi possível conectar ao BookTrader. Verifique sua conexão e tente novamente.',
+            0);
     }
 }
 
+// guarda o token e a identificacao retornados para autenticar chamadas e personalizar o painel.
 async function login(payload) {
     const responseData = await request({
         method: 'POST',
@@ -129,8 +190,18 @@ async function login(payload) {
     if (responseData.usuarioId) {
         setUsuarioId(responseData.usuarioId);
     }
+    if (responseData.usuarioNome) {
+        setUsuarioNome(responseData.usuarioNome);
+    }
 
     return responseData;
+}
+
+async function getUsuarioAtual() {
+    return request({
+        method: 'GET',
+        endpoint: '/usuarios/me',
+    });
 }
 
 async function getUsuarios() {
@@ -201,10 +272,18 @@ async function criarOferta(payload) {
     });
 }
 
-async function cancelarOferta(id) {
+async function cancelarOferta(id, motivo) {
     return request({
         method: 'DELETE',
         endpoint: `/oferta/${id}`,
+        body: { motivo },
+    });
+}
+
+async function removerLivroOferta(ofertaId, livroId) {
+    return request({
+        method: 'DELETE',
+        endpoint: `/oferta/${ofertaId}/livros/${livroId}`,
     });
 }
 

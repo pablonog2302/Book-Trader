@@ -1,7 +1,5 @@
 package com.example.booktrader.DTO;
 
-import com.example.booktrader.entities.Empresa;
-
 public class UsuarioRequest {
 
     public UsuarioRequest(){}
@@ -13,19 +11,6 @@ public class UsuarioRequest {
     private String dataNascimento;
 
     private String senha;
-
-
-//
-    private Long empresa_id;
-
-    public Long getEmpresa_id() {
-        return empresa_id;
-    }
-
-    public void setEmpresa_id(Long empresa_id) {
-        this.empresa_id = empresa_id;
-    }
-//
 
 
     public String getSenha() {

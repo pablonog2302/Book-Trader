@@ -8,6 +8,7 @@ public class AtualizaStatusSolicitacao {
 
     private String status;
     private List<Long> livrosAceitosIds;
+    private String motivo;
 
     public String getStatus() {
         return status;
@@ -23,5 +24,13 @@ public class AtualizaStatusSolicitacao {
 
     public void setLivrosAceitosIds(List<Long> livrosAceitosIds) {
         this.livrosAceitosIds = livrosAceitosIds;
+    }
+
+    public String getMotivo() {
+        return motivo;
+    }
+
+    public void setMotivo(String motivo) {
+        this.motivo = motivo;
     }
 }

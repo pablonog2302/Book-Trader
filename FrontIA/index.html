@@ -3,65 +3,81 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Entrar</title>
+    <title>Entrar | BookTrader</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <main class="page">
-        <section class="login-panel" aria-labelledby="login-heading">
-            <header class="page-header">
-                <p class="eyebrow">Acesso seguro</p>
-                <h1 id="login-heading">Entrar</h1>
-                <p class="intro">Informe seus dados para acessar o sistema.</p>
-            </header>
+<main class="page auth-layout">
+    <section class="login-panel" aria-labelledby="login-heading">
+        <header class="page-header">
+            <p class="eyebrow">Acesso seguro</p>
+            <h1 id="login-heading">Entrar no BookTrader</h1>
+            <p class="intro" id="page-intro">Informe seus dados para acessar sua comunidade de troca de livros.</p>
+        </header>
 
+        <form id="loginForm" novalidate>
+            <div class="form-field">
+                <label for="cpf">CPF</label>
+                <input id="cpf" name="cpf" type="text" inputmode="numeric" autocomplete="username"
+                       minlength="11" maxlength="11" pattern="[0-9]{11}" aria-describedby="cpfAjuda" required>
+                <small class="field-help" id="cpfAjuda">Use exatamente 11 números.</small>
+            </div>
 
-            
-            <form id="loginForm">
+            <div class="form-field">
+                <label for="senha">Senha</label>
+                <input id="senha" name="senha" type="password" inputmode="numeric" autocomplete="current-password"
+                       minlength="1" maxlength="8" pattern="[0-9]{1,8}" aria-describedby="senhaAjuda" required>
+                <small class="field-help" id="senhaAjuda">Use somente números, com até 8 dígitos.</small>
+            </div>
+            <button id="submit-button" type="submit">Entrar</button>
+            <p id="feedback" class="message" role="status" aria-live="polite"></p>
+        </form>
 
-                <div class="form-field">
-                    <label for="cpf">CPF</label>
-                    <input id="cpf" name="cpf" type="text" autocomplete="username" required>
-                </div>
+        <button id="mostrarCadastro" class="button-secondary" type="button">Criar uma conta</button>
 
-                <div class="form-field">
-                    <label for="senha">Senha</label>
-                    <input id="senha" name="senha" type="password" autocomplete="current-password" required>
-                </div>
-                <button id="submit-button" type="submit">Entrar</button>
-                <p id="feedback" class="message" role="status" aria-live="polite"></p>
-            </form>
+        <form id="cadastroForm" novalidate hidden>
+            <div class="form-field">
+                <label for="novoNome">Nome:</label>
+                <input id="novoNome" name="nome" type="text" autocomplete="name" required>
+            </div>
 
-            <button id="mostrarCadastro" type="button">Criar uma conta</button>
+            <div class="form-field">
+                <label for="novoCpf">CPF:</label>
+                <input id="novoCpf" name="cpf" type="text" inputmode="numeric" autocomplete="username"
+                       minlength="11" maxlength="11" pattern="[0-9]{11}" aria-describedby="novoCpfAjuda" required>
+                <small class="field-help" id="novoCpfAjuda">Use exatamente 11 números.</small>
+            </div>
 
-            <form id="cadastroForm" hidden>
-                <div class="form-field">
-                    <label for="novoNome">Nome:</label>
-                    <input id="novoNome" name="nome" type="text" autocomplete="name" required>
-                </div>
+            <div class="form-field">
+                <label for="novaDataNascimento">Data de nascimento:</label>
+                <input id="novaDataNascimento" name="dataNascimento" type="date" required>
+            </div>
 
-                <div class="form-field">
-                    <label for="novoCpf">CPF:</label>
-                    <input id="novoCpf" name="cpf" type="text" autocomplete="username" required>
-                </div>
+            <div class="form-field">
+                <label for="novaSenha">Senha:</label>
+                <input id="novaSenha" name="senha" type="password" inputmode="numeric" autocomplete="new-password"
+                       minlength="1" maxlength="8" pattern="[0-9]{1,8}" aria-describedby="novaSenhaAjuda" required>
+                <small class="field-help" id="novaSenhaAjuda">Use somente números, com até 8 dígitos.</small>
+            </div>
 
-                <div class="form-field">
-                    <label for="novaDataNascimento">Data de nascimento:</label>
-                    <input id="novaDataNascimento" name="dataNascimento" type="date" required>
-                </div>
+            <button type="submit">Cadastrar</button>
+            <button id="voltarLogin" type="button">Voltar para entrar</button>
+        </form>
+    </section>
 
-                <div class="form-field">
-                    <label for="novaSenha">Senha:</label>
-                    <input id="novaSenha" name="senha" type="password" autocomplete="new-password" required>
-                </div>
-
-                <button type="submit">Cadastrar</button>
-                <button id="voltarLogin" type="button">Voltar para entrar</button>
-                <p id="cadastroFeedback" class="message" role="status" aria-live="polite"></p>
-            </form>
-        </section>
-    </main>
-    <script src="js/api.js"></script>
-    <script src="js/main.js"></script>
+    <aside class="auth-story" aria-label="Sobre o BookTrader">
+        <p class="eyebrow">Uma biblioteca em movimento</p>
+        <h2>Boas histórias merecem novas estantes.</h2>
+        <p>Encontre livros usados, ofereça os seus e acompanhe cada proposta de troca em um só lugar.</p>
+        <ol class="auth-steps">
+            <li><span>01</span> Descubra livros disponíveis</li>
+            <li><span>02</span> Monte sua proposta de troca</li>
+            <li><span>03</span> Acompanhe a resposta</li>
+        </ol>
+    </aside>
+</main>
+<script src="js/ui.js"></script>
+<script src="js/api.js"></script>
+<script src="js/main.js"></script>
 </body>
 </html>

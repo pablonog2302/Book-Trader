@@ -3,8 +3,10 @@ package com.example.booktrader.controller;
 
 import com.example.booktrader.DTO.EnderecoResponse;
 import com.example.booktrader.utils.ConsultaCepUtils;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/cep")
@@ -18,10 +20,9 @@ public class CepController {
 
 
         if (cep.length() != 8) {
-
-            // retorna erro 400 se o cep nao tiver 8 caracteres
-            return ResponseEntity.badRequest()
-                    .body("O CEP deve possuir exatamente 8 números.");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "O CEP deve possuir exatamente 8 números.");
         }
 
         // consulta o viacep e guarda o endereco encontrado
