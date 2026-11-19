@@ -1,0 +1,27 @@
+services:
+  postgres-db:
+    image: postgres:16-alpine
+    container_name: meu-postgres-local
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=booktrade_soke_user
+      - POSTGRES_PASSWORD=uwvoqufcQvEHU4yIn6diQiERiG2SUg5U
+      - POSTGRES_DB=booktrade_soke
+    volumes:
+      - postgres-data-local:/var/lib/postgresql/data
+
+  api-spring:
+    container_name: minha-api
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-db:5432/aulafull
+      - SPRING_DATASOURCE_USERNAME=booktrade_soke_user
+      - SPRING_DATASOURCE_PASSWORD=uwvoqufcQvEHU4yIn6diQiERiG2SUg5U
+    depends_on:
+      - postgres-db
+
+volumes:
+  postgres-data-local:
