@@ -1,5 +1,6 @@
 package com.example.booktrader.controller;
 
+import com.example.booktrader.config.ApiExceptionHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;

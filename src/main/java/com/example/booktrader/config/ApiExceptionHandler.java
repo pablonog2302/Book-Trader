@@ -1,4 +1,4 @@
-package com.example.booktrader.controller;
+package com.example.booktrader.config;
 
 import com.example.booktrader.DTO.ApiErrorResponse;
 import org.slf4j.Logger;
@@ -13,7 +13,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
 
-@RestControllerAdvice
+
+//ver com a ia o pq esta dando conflito esta linha com o swagger
+//@RestControllerAdvice
 public class ApiExceptionHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(ApiExceptionHandler.class);
