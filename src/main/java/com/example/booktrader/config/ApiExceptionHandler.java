@@ -15,7 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 
 //ver com a ia o pq esta dando conflito esta linha com o swagger
-//@RestControllerAdvice
+@RestControllerAdvice
 public class ApiExceptionHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(ApiExceptionHandler.class);
