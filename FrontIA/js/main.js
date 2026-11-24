@@ -177,6 +177,12 @@ async function cadastrarNovoUsuario(event) {
         return;
     }
 
+    const botaoCadastrar = cadastroForm.querySelector('button[type="submit"]');
+    if (botaoCadastrar.disabled) {
+        return;
+    }
+
+    botaoCadastrar.disabled = true;
     try {
         await cadastrarUsuario(dadosUsuario);
         cadastroForm.reset();
@@ -184,6 +190,8 @@ async function cadastrarNovoUsuario(event) {
         exibirMensagem('Conta criada com sucesso. Entre com seu CPF e senha.', 'success');
     } catch (error) {
         await mostrarErro(mensagemUsuarioDeErro(error));
+    } finally {
+        botaoCadastrar.disabled = false;
     }
 }
 

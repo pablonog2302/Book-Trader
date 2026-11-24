@@ -73,6 +73,18 @@ let filtrosLivros = {
     autor: '',
     genero: '',
 };
+let versaoConteudoAtual = 0;
+
+// cada nova tela recebe uma versao para impedir que respostas antigas sobrescrevam a navegacao atual.
+function iniciarAtualizacaoDeTela() {
+    versaoConteudoAtual += 1;
+    return versaoConteudoAtual;
+}
+
+function atualizacaoDeTelaEstaAtual(versao) {
+    return versao === versaoConteudoAtual;
+}
+
 if (!localStorage.getItem('token')) {
     sessionStorage.removeItem('isLoggedIn');
     window.location.href = 'index.html';
@@ -80,6 +92,7 @@ if (!localStorage.getItem('token')) {
 
 
 function renderSection(sectionKey, livroId = null) {
+    const versao = iniciarAtualizacaoDeTela();
     const section = sections[sectionKey] || sections.home;
     pageTitle.textContent = section.title;
     pageContent.innerHTML = section.content;
@@ -90,12 +103,12 @@ function renderSection(sectionKey, livroId = null) {
     });
 
     if (sectionKey === 'livros') {
-        carregarLivros();
+        carregarLivros(versao);
     } else if (sectionKey === 'ofertas') {
-        carregarOfertas();
+        carregarOfertas(versao);
     } else if (sectionKey === 'solicitacoes') {
         filtroLivroSolicitacao = livroId === null ? null : Number(livroId);
-        carregarSolicitacoes(filtroLivroSolicitacao);
+        carregarSolicitacoes(filtroLivroSolicitacao, versao);
     }
 }
 
@@ -119,7 +132,10 @@ async function carregarUsuarioLogado() {
 }
 
 
-async function carregarLivros() {
+async function carregarLivros(versaoRecebida = null) {
+    const versao = versaoRecebida === null
+        ? iniciarAtualizacaoDeTela()
+        : versaoRecebida;
     pageContent.innerHTML = `
         <div class="panel">
             <h2>Livros cadastrados</h2>
@@ -128,10 +144,20 @@ async function carregarLivros() {
     `;
 
     try {
-        livrosCadastrados = await getLivros();
-        mostrarListaAtual();
+        const livros = await getLivros();
+        if (!atualizacaoDeTelaEstaAtual(versao)) {
+            return;
+        }
+        livrosCadastrados = livros;
+        mostrarListaAtual(versao);
     } catch (erro) {
+        if (!atualizacaoDeTelaEstaAtual(versao)) {
+            return;
+        }
         await mostrarErro(mensagemUsuarioDeErro(erro));
+        if (!atualizacaoDeTelaEstaAtual(versao)) {
+            return;
+        }
         pageContent.innerHTML = `
             <div class="panel">
                 <h2>Erro</h2>
@@ -155,7 +181,14 @@ function mostrarMeusLivros() {
 }
 
 
-function mostrarListaAtual() {
+function mostrarListaAtual(versaoRecebida = null) {
+    const versao = versaoRecebida === null
+        ? iniciarAtualizacaoDeTela()
+        : versaoRecebida;
+    if (!atualizacaoDeTelaEstaAtual(versao)) {
+        return;
+    }
+
     let listaLivros = livrosCadastrados;
 
     if (modoListaLivros === 'meus') {
@@ -165,7 +198,7 @@ function mostrarListaAtual() {
         });
     }
 
-    exibirLivros(listaLivros);
+    exibirLivros(listaLivros, versao);
 }
 
 
@@ -191,6 +224,7 @@ function filtrarLista(listaLivros) {
 
 
 function mostrarFormularioCadastro() {
+    iniciarAtualizacaoDeTela();
     pageContent.innerHTML = `
         <div class="panel">
             <h2>Cadastrar livro</h2>
@@ -228,6 +262,12 @@ function mostrarFormularioCadastro() {
 
     formCadastroLivro.addEventListener('submit', async function(event) {
         event.preventDefault();
+        const botaoCadastrar = formCadastroLivro.querySelector('button[type="submit"]');
+        if (botaoCadastrar.disabled) {
+            return;
+        }
+        botaoCadastrar.disabled = true;
+        const versaoDoFormulario = versaoConteudoAtual;
 
         const dadosLivro = {
             usuarioId: getUsuarioId(),
@@ -242,15 +282,20 @@ function mostrarFormularioCadastro() {
         try {
             await cadastrarLivro(dadosLivro);
             await mostrarSucesso('Livro cadastrado com sucesso.');
-            await carregarLivros();
+            if (atualizacaoDeTelaEstaAtual(versaoDoFormulario)) {
+                await carregarLivros();
+            }
         } catch (erro) {
             await mostrarErroFormulario(erro);
+        } finally {
+            botaoCadastrar.disabled = false;
         }
     });
 }
 
 
 async function mostrarDetalhesLivro(id) {
+    const versao = iniciarAtualizacaoDeTela();
     pageContent.innerHTML = `
         <div class="panel">
             <h2>Detalhes do livro</h2>
@@ -260,6 +305,9 @@ async function mostrarDetalhesLivro(id) {
 
     try {
         const livro = await getLivroPorId(id);
+        if (!atualizacaoDeTelaEstaAtual(versao)) {
+            return;
+        }
         // as acoes variam pela propriedade: o dono gerencia o livro e ve solicitacoes; outros usuarios podem ofertar.
         const ehMeuLivro = livro.usuario
             && String(livro.usuario.id) === String(getUsuarioId());
@@ -294,7 +342,13 @@ async function mostrarDetalhesLivro(id) {
             </div>
         `;
     } catch (erro) {
+        if (!atualizacaoDeTelaEstaAtual(versao)) {
+            return;
+        }
         await mostrarErro(mensagemUsuarioDeErro(erro));
+        if (!atualizacaoDeTelaEstaAtual(versao)) {
+            return;
+        }
         pageContent.innerHTML = `
             <div class="panel">
                 <h2>Erro</h2>
@@ -307,14 +361,20 @@ async function mostrarDetalhesLivro(id) {
 
 
 async function mostrarFormularioEdicao(id) {
+    const versao = iniciarAtualizacaoDeTela();
     try {
         const livro = await getLivroPorId(id);
+        if (!atualizacaoDeTelaEstaAtual(versao)) {
+            return;
+        }
         const ehMeuLivro = livro.usuario
             && String(livro.usuario.id) === String(getUsuarioId());
 
         if (!ehMeuLivro) {
             await mostrarErro('Você só pode editar os seus próprios livros.');
-            mostrarListaAtual();
+            if (atualizacaoDeTelaEstaAtual(versao)) {
+                mostrarListaAtual();
+            }
             return;
         }
 
@@ -352,6 +412,7 @@ async function mostrarFormularioEdicao(id) {
 
         document.getElementById('formEdicaoLivro').addEventListener('submit', async function(event) {
             event.preventDefault();
+            const versaoDoFormulario = versaoConteudoAtual;
 
             const dadosLivro = {
                 titulo: document.getElementById('titulo').value,
@@ -365,13 +426,21 @@ async function mostrarFormularioEdicao(id) {
             try {
                 await atualizarLivro(id, dadosLivro);
                 await mostrarSucesso('Livro atualizado com sucesso.');
-                await carregarLivros();
+                if (atualizacaoDeTelaEstaAtual(versaoDoFormulario)) {
+                    await carregarLivros();
+                }
             } catch (erro) {
                 await mostrarErroFormulario(erro);
             }
         });
     } catch (erro) {
+        if (!atualizacaoDeTelaEstaAtual(versao)) {
+            return;
+        }
         await mostrarErro(mensagemUsuarioDeErro(erro));
+        if (!atualizacaoDeTelaEstaAtual(versao)) {
+            return;
+        }
         pageContent.innerHTML = `
             <div class="panel">
                 <h2>Erro</h2>
@@ -384,6 +453,7 @@ async function mostrarFormularioEdicao(id) {
 
 
 async function confirmarExclusaoLivro(id) {
+    const versao = versaoConteudoAtual;
     if (!await confirmarAcao('Tem certeza de que deseja excluir este livro?', 'Excluir livro', 'Excluir')) {
         return;
     }
@@ -391,7 +461,9 @@ async function confirmarExclusaoLivro(id) {
     try {
         await excluirLivro(id);
         await mostrarSucesso('Livro excluído com sucesso.');
-        await carregarLivros();
+        if (atualizacaoDeTelaEstaAtual(versao)) {
+            await carregarLivros();
+        }
     } catch (erro) {
         await mostrarErro(mensagemUsuarioDeErro(erro));
     }
@@ -415,7 +487,11 @@ function ligarContadorDescricao() {
 }
 
 
-function exibirLivros(listaLivros) {
+function exibirLivros(listaLivros, versao) {
+    if (!atualizacaoDeTelaEstaAtual(versao)) {
+        return;
+    }
+
     const livrosFiltrados = filtrarLista(listaLivros);
     let conteudoLivros = `
         <div class="panel library-toolbar">
@@ -502,14 +578,27 @@ function limparFiltrosLivros() {
 }
 
 
-async function carregarOfertas() {
+async function carregarOfertas(versaoRecebida = null) {
+    const versao = versaoRecebida === null
+        ? iniciarAtualizacaoDeTela()
+        : versaoRecebida;
     pageContent.innerHTML = '<div class="panel"><p>Carregando ofertas...</p></div>';
 
     try {
-        ofertasEnviadas = await getOfertasEnviadas();
-        exibirOfertas();
+        const ofertas = await getOfertasEnviadas();
+        if (!atualizacaoDeTelaEstaAtual(versao)) {
+            return;
+        }
+        ofertasEnviadas = ofertas;
+        exibirOfertas(versao);
     } catch (erro) {
+        if (!atualizacaoDeTelaEstaAtual(versao)) {
+            return;
+        }
         await mostrarErro(mensagemUsuarioDeErro(erro));
+        if (!atualizacaoDeTelaEstaAtual(versao)) {
+            return;
+        }
         pageContent.innerHTML = `
             <div class="panel">
                 <p>Não foi possível carregar as ofertas.</p>
@@ -520,7 +609,14 @@ async function carregarOfertas() {
 }
 
 
-function exibirOfertas() {
+function exibirOfertas(versaoRecebida = null) {
+    const versao = versaoRecebida === null
+        ? iniciarAtualizacaoDeTela()
+        : versaoRecebida;
+    if (!atualizacaoDeTelaEstaAtual(versao)) {
+        return;
+    }
+
     let conteudo = `
         <div class="panel">
             <h2>Ofertas enviadas</h2>
@@ -563,10 +659,15 @@ function exibirOfertas() {
 
 
 async function mostrarFormularioOferta(livroDesejadoId = null) {
+    const versao = iniciarAtualizacaoDeTela();
     pageContent.innerHTML = '<div class="panel"><p>Carregando livros...</p></div>';
 
     try {
-        livrosCadastrados = await getLivros();
+        const livros = await getLivros();
+        if (!atualizacaoDeTelaEstaAtual(versao)) {
+            return;
+        }
+        livrosCadastrados = livros;
         // separa os livros proprios dos livros de terceiros e usa o id recebido para pre-selecionar o desejado.
         const usuarioId = getUsuarioId();
         const meusLivros = livrosCadastrados.filter((livro) => {
@@ -611,7 +712,13 @@ async function mostrarFormularioOferta(livroDesejadoId = null) {
         document.getElementById('formOferta').addEventListener('submit', enviarOferta);
         atualizarResumoOferta();
     } catch (erro) {
+        if (!atualizacaoDeTelaEstaAtual(versao)) {
+            return;
+        }
         await mostrarErro(mensagemUsuarioDeErro(erro));
+        if (!atualizacaoDeTelaEstaAtual(versao)) {
+            return;
+        }
         pageContent.innerHTML = `
             <div class="panel">
                 <p>Não foi possível carregar os livros.</p>
@@ -640,33 +747,46 @@ function atualizarResumoOferta() {
 
 async function enviarOferta(event) {
     event.preventDefault();
-    const livroDesejadoId = Number(document.getElementById('livroDesejado').value);
-    const livrosOferecidosIds = [];
-    document.querySelectorAll('input[name="livrosOferecidos"]:checked').forEach((item) => {
-        livrosOferecidosIds.push(Number(item.value));
-    });
-
-    if (!livroDesejadoId || livrosOferecidosIds.length === 0) {
-        await mostrarErro('Selecione o livro desejado e pelo menos um livro para oferecer.');
+    const formOferta = document.getElementById('formOferta');
+    const botaoEnviar = formOferta.querySelector('button[type="submit"]');
+    if (botaoEnviar.disabled) {
         return;
     }
-
-    const tituloDesejado = document.getElementById('livroDesejado').selectedOptions[0].textContent.trim();
-    if (!await confirmarAcao(`Enviar oferta para ${tituloDesejado} com ${livrosOferecidosIds.length} livro(s)?`, 'Confirmar oferta', 'Enviar oferta')) {
-        return;
-    }
+    botaoEnviar.disabled = true;
+    const versaoDoFormulario = versaoConteudoAtual;
 
     try {
+        const livroDesejadoId = Number(document.getElementById('livroDesejado').value);
+        const livrosOferecidosIds = [];
+        document.querySelectorAll('input[name="livrosOferecidos"]:checked').forEach((item) => {
+            livrosOferecidosIds.push(Number(item.value));
+        });
+
+        if (!livroDesejadoId || livrosOferecidosIds.length === 0) {
+            await mostrarErro('Selecione o livro desejado e pelo menos um livro para oferecer.');
+            return;
+        }
+
+        const tituloDesejado = document.getElementById('livroDesejado').selectedOptions[0].textContent.trim();
+        if (!await confirmarAcao(`Enviar oferta para ${tituloDesejado} com ${livrosOferecidosIds.length} livro(s)?`, 'Confirmar oferta', 'Enviar oferta')) {
+            return;
+        }
+
         await criarOferta({ livroDesejadoId, livrosOferecidosIds });
         await mostrarSucesso('Oferta enviada com sucesso.');
-        await carregarOfertas();
+        if (atualizacaoDeTelaEstaAtual(versaoDoFormulario)) {
+            await carregarOfertas();
+        }
     } catch (erro) {
         await mostrarErro(mensagemUsuarioDeErro(erro));
+    } finally {
+        botaoEnviar.disabled = false;
     }
 }
 
 
 async function cancelarOfertaEnviada(id) {
+    const versao = versaoConteudoAtual;
     const motivo = await solicitarMotivo('Informe por que deseja cancelar esta oferta.', 'Cancelar oferta');
     if (motivo === null) {
         return;
@@ -675,35 +795,53 @@ async function cancelarOfertaEnviada(id) {
     try {
         await cancelarOferta(id, motivo);
         await mostrarSucesso('Oferta cancelada.');
-        await carregarOfertas();
+        if (atualizacaoDeTelaEstaAtual(versao)) {
+            await carregarOfertas();
+        }
     } catch (erro) {
         await mostrarErro(mensagemUsuarioDeErro(erro));
     }
 }
 
 async function removerLivroDaOferta(ofertaId, livroId) {
+    const versao = versaoConteudoAtual;
     if (!await confirmarAcao('Deseja remover este livro da oferta pendente?', 'Remover livro', 'Remover')) {
         return;
     }
     try {
         await removerLivroOferta(ofertaId, livroId);
         await mostrarSucesso('Livro removido da oferta.');
-        await carregarOfertas();
+        if (atualizacaoDeTelaEstaAtual(versao)) {
+            await carregarOfertas();
+        }
     } catch (erro) {
         await mostrarErro(mensagemUsuarioDeErro(erro));
     }
 }
 
 
-async function carregarSolicitacoes(livroId = filtroLivroSolicitacao) {
+async function carregarSolicitacoes(livroId = filtroLivroSolicitacao, versaoRecebida = null) {
+    const versao = versaoRecebida === null
+        ? iniciarAtualizacaoDeTela()
+        : versaoRecebida;
     pageContent.innerHTML = '<div class="panel"><p>Carregando solicitações...</p></div>';
 
     try {
-        solicitacoesRecebidas = await getSolicitacoesRecebidas();
+        const solicitacoes = await getSolicitacoesRecebidas();
+        if (!atualizacaoDeTelaEstaAtual(versao)) {
+            return;
+        }
+        solicitacoesRecebidas = solicitacoes;
         filtroLivroSolicitacao = livroId;
-        exibirSolicitacoes();
+        exibirSolicitacoes(versao);
     } catch (erro) {
+        if (!atualizacaoDeTelaEstaAtual(versao)) {
+            return;
+        }
         await mostrarErro(mensagemUsuarioDeErro(erro));
+        if (!atualizacaoDeTelaEstaAtual(versao)) {
+            return;
+        }
         pageContent.innerHTML = `
             <div class="panel">
                 <p>Não foi possível carregar as solicitações.</p>
@@ -714,7 +852,11 @@ async function carregarSolicitacoes(livroId = filtroLivroSolicitacao) {
 }
 
 
-function exibirSolicitacoes() {
+function exibirSolicitacoes(versao) {
+    if (!atualizacaoDeTelaEstaAtual(versao)) {
+        return;
+    }
+
     const listaSolicitacoes = filtroLivroSolicitacao === null
         ? solicitacoesRecebidas
         : solicitacoesRecebidas.filter((oferta) => {
@@ -773,6 +915,7 @@ function exibirSolicitacoes() {
 
 
 async function decidirSolicitacaoRecebida(id, status) {
+    const versao = versaoConteudoAtual;
     // o aceite envia os itens escolhidos; a recusa coleta o motivo que sera mantido no historico.
     const livrosAceitosIds = [];
     if (status === 'ACEITA') {
@@ -801,7 +944,9 @@ async function decidirSolicitacaoRecebida(id, status) {
     try {
         await decidirSolicitacao(id, { status, livrosAceitosIds, motivo: motivo ? motivo.trim() : null });
         await mostrarSucesso('A solicitação foi atualizada com sucesso.');
-        await carregarSolicitacoes();
+        if (atualizacaoDeTelaEstaAtual(versao)) {
+            await carregarSolicitacoes();
+        }
     } catch (erro) {
         await mostrarErro(mensagemUsuarioDeErro(erro));
     }

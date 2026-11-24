@@ -104,6 +104,40 @@ function mensagemPadraoHttp(status) {
     }
 }
 
+// confirma os formatos usados pelo painel antes que eles sejam processados.
+function validarObjetoApi(data, recurso) {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+        throw new ApiRequestError(`A resposta da API para ${recurso} está inválida.`);
+    }
+
+    return data;
+}
+
+function validarListaApi(data, recurso) {
+    if (!Array.isArray(data)
+        || data.some((item) => !item || typeof item !== 'object' || Array.isArray(item))) {
+        throw new ApiRequestError(`A resposta da API para ${recurso} está inválida.`);
+    }
+
+    return data;
+}
+
+function validarListaDeOfertasApi(data, recurso) {
+    const ofertas = validarListaApi(data, recurso);
+    const ofertasInvalidas = ofertas.some((oferta) => {
+        return !Array.isArray(oferta.livrosOferecidos)
+            || oferta.livrosOferecidos.some((livro) => {
+                return !livro || typeof livro !== 'object' || Array.isArray(livro);
+            });
+    });
+
+    if (ofertasInvalidas) {
+        throw new ApiRequestError(`A resposta da API para ${recurso} está inválida.`);
+    }
+
+    return ofertas;
+}
+
 // centraliza autenticacao, leitura das respostas e mensagens; em 401 tambem limpa a sessao.
 async function request({ method = 'GET', endpoint, body = null, headers = {}, requireAuth = true }) {
     const token = getToken();
@@ -136,6 +170,11 @@ async function request({ method = 'GET', endpoint, body = null, headers = {}, re
             try {
                 data = responseText ? JSON.parse(responseText) : null;
             } catch {
+                if (response.ok) {
+                    throw new ApiRequestError(
+                        'A API retornou uma resposta JSON inválida.',
+                        response.status);
+                }
                 data = null;
             }
         }
@@ -181,27 +220,42 @@ async function login(payload) {
         requireAuth: false,
     });
 
+    // a resposta esperada segue o loginresponse atual; validar antes de salvar dados parciais da sessao.
+    if (!responseData
+        || typeof responseData !== 'object'
+        || Array.isArray(responseData)
+        || typeof responseData.usuarioId !== 'number'
+        || typeof responseData.usuarioNome !== 'string'
+        || !responseData.usuarioNome.trim()) {
+        throw new ApiRequestError('A API retornou uma resposta inválida ao fazer login.');
+    }
+
     const token = extractTokenFromResponse(responseData);
 
-    if (token) {
-        setToken(token);
+    if (typeof token !== 'string' || !token.trim()) {
+        throw new ApiRequestError('A API não retornou um token de acesso válido.');
     }
 
-    if (responseData.usuarioId) {
-        setUsuarioId(responseData.usuarioId);
-    }
-    if (responseData.usuarioNome) {
-        setUsuarioNome(responseData.usuarioNome);
-    }
+    setToken(token);
+    setUsuarioId(responseData.usuarioId);
+    setUsuarioNome(responseData.usuarioNome);
 
     return responseData;
 }
 
 async function getUsuarioAtual() {
-    return request({
+    const data = await request({
         method: 'GET',
         endpoint: '/usuarios/me',
     });
+    const usuario = validarObjetoApi(data, 'usuário');
+    if (typeof usuario.id !== 'number'
+        || typeof usuario.nome !== 'string'
+        || !usuario.nome.trim()) {
+        throw new ApiRequestError('A resposta da API para usuário está inválida.');
+    }
+
+    return usuario;
 }
 
 async function getUsuarios() {
@@ -212,17 +266,19 @@ async function getUsuarios() {
 }
 
 async function getLivros() {
-    return request({
+    const data = await request({
         method: 'GET',
         endpoint: '/livro',
     });
+    return validarListaApi(data, 'livros');
 }
 
 async function getLivroPorId(id) {
-    return request({
+    const data = await request({
         method: 'GET',
         endpoint: `/livro/${id}`,
     });
+    return validarObjetoApi(data, 'livro');
 }
 
 async function cadastrarLivro(payload) {
@@ -258,10 +314,11 @@ async function cadastrarUsuario(payload) {
 }
 
 async function getOfertasEnviadas() {
-    return request({
+    const data = await request({
         method: 'GET',
         endpoint: '/oferta',
     });
+    return validarListaDeOfertasApi(data, 'ofertas');
 }
 
 async function criarOferta(payload) {
@@ -288,10 +345,11 @@ async function removerLivroOferta(ofertaId, livroId) {
 }
 
 async function getSolicitacoesRecebidas() {
-    return request({
+    const data = await request({
         method: 'GET',
         endpoint: '/solicitacao',
     });
+    return validarListaDeOfertasApi(data, 'solicitações');
 }
 
 async function decidirSolicitacao(id, payload) {
